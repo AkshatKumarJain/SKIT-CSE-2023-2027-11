@@ -20,3 +20,27 @@ export async function loginUser(email, password) {
 
   return data;
 }
+export async function logoutUser() {
+  const accessToken = localStorage.getItem("accessToken");
+
+  if (!accessToken) {
+    throw new Error("User is not logged in.");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/user/logout`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Logout failed");
+  }
+
+  localStorage.removeItem("accessToken");
+
+  return data;
+}

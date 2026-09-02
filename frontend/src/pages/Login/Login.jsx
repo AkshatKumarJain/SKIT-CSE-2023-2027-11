@@ -11,27 +11,29 @@ function Login() {
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
-  e.preventDefault();
+        e.preventDefault();
 
-  setError("");
+        setError("");
 
-  if (!email.toLowerCase().endsWith("@skit.ac.in")) {
-    setError("Please use your SKIT college email.");
-    return;
-  }
+        if (!email.toLowerCase().endsWith("@skit.ac.in")) {
+            setError("Please use your SKIT college email.");
+            return;
+        }
 
-  setLoading(true);
+        setLoading(true);
 
-  try {
-    const data = await loginUser(email, password);
+        try {
+            const data = await loginUser(email, password);
 
-    console.log("Login successful:", data);
-  } catch (error) {
-    setError(error.message);
-  } finally {
-    setLoading(false);
-  }
-};
+            localStorage.setItem("accessToken", data.token.accessToken);
+
+            console.log("Login successful:", data);
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="login-page">
