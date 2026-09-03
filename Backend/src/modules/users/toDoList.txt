@@ -1,0 +1,2 @@
+1. create a error handler - completed
+2. create login and logout features for users - completed
