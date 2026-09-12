@@ -1,0 +1,71 @@
+PROJECT:
+Project Allocation Tracking Portal
+
+PURPOSE:
+A web application for managing users, projects, project allocation,
+mentorship and related academic workflows.
+
+ARCHITECTURE:
+
+Frontend:
+- React
+- Javascript
+- Vite
+
+Backend:
+- Node.js
+- Express
+- TypeScript
+
+Database:
+- MongoDB
+- Mongoose
+
+Caching / token-related functionality:
+- Redis
+
+COMMUNICATION:
+
+Frontend communicates with Backend through REST APIs.
+
+ARCHITECTURAL BOUNDARY:
+
+Frontend
+    |
+    | HTTP / REST
+    v
+Backend
+    |
+    +---- MongoDB
+    |
+    +---- Redis
+
+BACKEND STRUCTURE:
+
+Routes:
+Define API endpoints.
+
+Controllers:
+Handle HTTP request and response.
+
+Services:
+Contain business logic.
+
+Models:
+Handle database schemas and persistence.
+
+Middleware:
+Handle authentication, authorization and
+other cross-cutting concerns.
+
+ERROR HANDLING:
+
+Expected application errors should use AppError
+and be handled by the central error handler.
+
+TESTING:
+
+Tests should verify externally observable behavior
+and important business rules.
+
+The AI must not modify production code while generating tests.
