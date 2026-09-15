@@ -205,7 +205,7 @@ Return complete runnable test files.
 
             model:
                 process.env.GEMINI_MODEL ||
-                "gemini-3.8-flash",
+                "gemini-3.6-flash",
 
             contents:
                 userPrompt,
