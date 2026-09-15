@@ -65,14 +65,65 @@ const TestGenerationResult = z.object({
 
 async function main() {
 
+    const outputDirectory =
+        path.join(
+            repoRoot,
+            ".ai-generated-tests"
+        );
+
+    // Always create the output directory
+    fs.mkdirSync(
+        outputDirectory,
+        {
+            recursive: true
+        }
+    );
+
     const context =
         collectContext();
+
+    console.log(
+        "Repository root:",
+        repoRoot
+    );
+
+    console.log(
+        "Output directory:",
+        outputDirectory
+    );
+
+    console.log(
+        "Changed files:"
+    );
+
+    console.log(
+        context.changedFiles
+    );
 
     if (
         context.changedFiles.length === 0
     ) {
+
         console.log(
             "No relevant source files changed."
+        );
+
+        // Create a report so GitHub Actions
+        // has something to upload.
+        fs.writeFileSync(
+            path.join(
+                outputDirectory,
+                "test-report.json"
+            ),
+            JSON.stringify(
+                {
+                    summary:
+                        "No relevant source files changed.",
+                    tests: []
+                },
+                null,
+                2
+            )
         );
 
         return;
@@ -281,6 +332,7 @@ Return complete runnable test files.
         response.text;
 
     if (!rawOutput) {
+
         throw new Error(
             "Gemini returned an empty response."
         );
@@ -305,23 +357,17 @@ Return complete runnable test files.
             parsedOutput
         );
 
-    const outputDirectory =
-        path.join(
-            repoRoot,
-            ".ai-generated-tests"
-        );
-
-    fs.mkdirSync(
-        outputDirectory,
-        {
-            recursive: true
-        }
+    console.log(
+        `Generated test count: ${result.tests.length}`
     );
-    console.log(`Generated test count: ${result.tests.length}`);
+
     for (const test of result.tests) {
 
         const filePath =
-    getSafeOutputPath(outputDirectory, test.filePath);
+            getSafeOutputPath(
+                outputDirectory,
+                test.filePath
+            );
 
         fs.mkdirSync(
             path.dirname(filePath),
