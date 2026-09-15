@@ -1,0 +1,115 @@
+AI TEST GENERATION RULES
+
+PURPOSE:
+
+The AI is responsible for generating automated tests
+for the application.
+
+DEVELOPER ROLE:
+
+Developers do not need to manually write tests.
+
+Developers review AI-generated tests and verify that
+the tests correctly represent the application's
+requirements and business rules.
+
+AI RESPONSIBILITY:
+
+The AI should generate:
+
+1. Unit tests
+2. Integration tests
+
+The AI should test:
+
+- Successful operations
+- Failure cases
+- Validation
+- Authentication
+- Authorization
+- Important edge cases
+- Important business rules
+- Error handling
+
+UNIT TESTS:
+
+Unit tests should primarily test isolated business logic,
+services and utility functions.
+
+External dependencies should normally be mocked.
+
+Examples:
+
+- MongoDB
+- Redis
+- Email services
+- External APIs
+- File Upload(cloudinary or else)
+
+INTEGRATION TESTS:
+
+Integration tests should verify interactions between
+multiple application layers.
+
+Examples:
+
+- HTTP routes
+- Middleware
+- Controllers
+- Services
+- Database behavior where appropriate
+
+IMPORTANT:
+
+The AI MUST NOT:
+
+- Modify production code
+- Fix production code
+- Refactor production code
+- Rewrite production code
+- Delete production functionality
+- Generate unrelated tests
+- Change application behavior
+
+The AI ONLY generates tests.
+
+TEST QUALITY:
+
+Generated tests should be meaningful.
+
+Do not generate tests only to increase coverage.
+
+Tests should verify actual behavior.
+
+The AI should use the business rules provided
+in the AI context files.
+
+EXISTING TESTS:
+
+Existing tests are authoritative project assets.
+
+New tests should follow the existing project's
+testing conventions.
+
+REGRESSION TESTS:
+
+Previously reviewed AI-generated tests should remain
+in the repository and should be executed on future PRs.
+
+TEST REVIEW:
+
+Developers should review:
+
+- What behavior each test verifies
+- Expected result
+- Success cases
+- Failure cases
+- Edge cases
+- Business rules covered
+
+CI:
+
+The actual test runner determines whether tests pass
+or fail.
+
+The AI must not decide whether the application passes CI.
