@@ -1,0 +1,37 @@
+FRONTEND
+
+TECHNOLOGY:
+
+React
+Javascript
+Vite
+
+UNIT TESTING:
+
+Test:
+
+- Components
+- Hooks
+- Utility functions
+- Client-side validation
+- Important UI behavior
+
+INTEGRATION TESTING:
+
+Test:
+
+- Component and API interaction
+- Forms and API interaction
+- Authentication flows
+- Important user workflows
+- Project flows like selection, approval, management, etc as available.
+
+TESTING PRINCIPLE:
+
+Prefer testing user-visible behavior rather than
+implementation details.
+
+API calls should normally be mocked in frontend tests.
+
+Do not modify production frontend code while
+generating tests.
