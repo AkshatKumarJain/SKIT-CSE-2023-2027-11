@@ -12,6 +12,15 @@ import transporter from "../../config/nodemailer";
 // import http from "http";
 
 class UserService {
+
+    async create(name: string, email: string, password: string){
+        const createUser = await userModel.create({
+            name: name,
+            email: email, 
+            password: password
+        });
+    }
+
     async login(email: string, password: string) {
         const findUser = await userModel.findOne({email: email});
         if(!findUser)
@@ -80,6 +89,7 @@ class UserService {
         const resetOTPExpiresAt = Date.now() + 300 * 1000; // 5 minutes
 
         await redisClient.setEx(cacheKey, resetOTPExpiresAt, resetOTP);
+        console.log(cacheKey, resetOTPExpiresAt, resetOTP);
 
         // await findUser.save();
 
@@ -143,6 +153,10 @@ class UserService {
         //     message: "Password reset successful. Please login again.",
         // };
         return true;
+    }
+
+    async sayHello() {
+        console.log("hello");
     }
 }
 

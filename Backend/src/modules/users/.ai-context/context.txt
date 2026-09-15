@@ -1,0 +1,44 @@
+MODULE: users
+
+PURPOSE:
+
+Handles user login, authentication, logout, Refresh
+password reset and user-related operations.
+
+ROLES:
+
+- Student
+- Teacher
+- Mentor
+- Admin
+- Lab Faculty
+
+IMPORTANT BUSINESS RULES:
+
+- Email must be unique.
+- Passwords must never be stored in plaintext.
+- Authentication uses JWT(through redis-jwt-auth).
+- Protected endpoints require authentication.
+- Refresh token operations interact with Redis.
+- Password reset tokens must expire.
+- Unauthorized requests must be rejected.
+
+DEPENDENCIES:
+
+- User model
+- Redis
+- JWT authentication(redis-jwt-auth)
+- Email service(nodemailer)
+
+IMPORTANT TEST CASES:
+
+- Duplicate email
+- Successful login
+- Invalid credentials
+- Missing user
+- Logout
+- Unauthorized access
+- Password reset
+- Invalid reset token
+- Expired reset token
+or others you can determine

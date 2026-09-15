@@ -6,15 +6,10 @@ export type SelectionPhase =
     | "PROJECT_BANK";
 
 export interface IProjectSelectionWindow {
-
     _id: mongoose.Types.ObjectId;
-
     phase: SelectionPhase;
-
     startDate: Date;
-
     endDate: Date;
-
     isActive: boolean;
 }
 

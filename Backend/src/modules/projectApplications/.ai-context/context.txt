@@ -1,0 +1,84 @@
+# Project Application Module Context
+
+## Module Purpose
+
+The Project Application module manages project applications submitted by authenticated users/students.
+
+Users can apply for projects through three different sources:
+
+* Their own project idea.
+* A faculty-provided project.
+* A project available in the project bank.
+
+Users can also retrieve their own applications and retrieve details of a specific application.
+
+## Authentication
+
+Every route in this module requires authentication.
+
+Authentication is handled using the `authMiddleware` provided by the `redis-jwt-auth` package.
+
+The middleware is configured with:
+
+* `required: true`
+
+Unauthenticated requests must be rejected before reaching the corresponding controller.
+
+## Controllers
+
+The module uses `projectApplicationController`.
+
+Available controller operations:
+
+* `submitOwnIdea`
+* `applyFacultyProject`
+* `applyProjectBank`
+* `getMyApplications`
+* `getApplicationById`
+
+## Business Context
+
+### Own Idea
+
+An authenticated student can submit their own project idea as a project application.
+
+### Faculty Project
+
+An authenticated student can apply for a project provided by faculty.
+
+### Project Bank
+
+An authenticated student can apply for a project available in the project bank.
+
+### My Applications
+
+An authenticated student can retrieve the applications they have submitted.
+
+The returned applications should belong to the currently authenticated user.
+
+### Application Details
+
+An authenticated user can request details for a particular application using its application ID.
+
+Authorization/ownership rules should be respected if they are implemented by the application service layer.
+
+## Testing Context
+
+Tests generated for this module should verify:
+
+* Authentication is required for every route.
+* Correct HTTP methods are used.
+* Correct controllers are invoked.
+* Valid requests are processed.
+* Invalid requests are rejected appropriately.
+* Missing or invalid application IDs are handled.
+* Non-existent applications are handled.
+* Users cannot access applications they are not authorized to access.
+* Errors from controllers/services are handled correctly.
+* Responses use the application's existing response and error-handling conventions.
+
+Tests must not modify production code.
+
+The test generator should use existing project testing utilities, mocks, fixtures, and conventions when available.
+
+Request-body fields and exact response structures should not be invented if they are not available from the relevant source/context files.

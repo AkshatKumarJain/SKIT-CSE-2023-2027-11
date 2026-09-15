@@ -178,16 +178,11 @@ class ProjectApplicationController {
         res: Response
     ): Promise<Response> {
 
-        const { applicationId } = req.params;
+        const {applicationId} = req.params;
 
 
         const application =
-            await projectApplicationService
-                .getApplicationById(
-                    applicationId
-                );
-
-
+            await projectApplicationService.getApplicationById(applicationId);
         return res.status(200).json({
 
             message:

@@ -6,6 +6,16 @@ import { ERROR_CODES } from "../../errors/errorCodes";
 import userModel from "./user.model";
 
 class UserController {
+
+    async create(req: Request, res: Response): Promise<Response> {
+        const {name, email, password} = req.body;
+        const createUser = await userService.create(name, email, password);
+        return res.status(201).json({
+            createUser,
+            message: "user created successfully"
+        })
+    }
+
     async login(req: Request, res: Response): Promise<Response> {
         const {email, password} = req.body;
         if(!email || !password)
@@ -33,13 +43,13 @@ class UserController {
     }
 
     async refresh(req: Request, res: Response): Promise<Response> {
-        const refreshToken = req.body;
+        const { refreshToken } = req.body;
         if(!refreshToken)
         {
             throw new AppError("Invalid or empty refresh token", 404, ERROR_CODES.VALIDATION_ERROR);
         }
         const rotatedToken = await userService.refresh(refreshToken);
-        return res.status(200).json({
+        return res.status(201).json({
             message: "token rotated successfully",
             newRefreshToken: rotatedToken 
         });
@@ -75,6 +85,11 @@ class UserController {
         return res.status(201).json({
             message: "Password has been changed successfully"
         });
+    }
+
+    async sayHello(req: Request, res: Response): Promise<Response>{
+        const say = userService.sayHello();
+        return res.status(200);
     }
 }
 

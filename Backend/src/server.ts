@@ -1,15 +1,16 @@
 import express from "express";
 import "dotenv/config"
 import cors from "cors";
-import { connectDB } from "./config/db";
-import { errorHandler } from "./middlewares/errorHandler";
-import userRouter from "./modules/users/user.route";
-import {connectRedis, disconnectRedis} from "./config/redis";
+import { connectDB } from "./config/db.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import userRouter from "./modules/users/user.route.js";
+import {connectRedis, disconnectRedis} from "./config/redis.js";
 
 const app = express();
 app.use(cors({
     origin: "http://localhost:5173"
 }));
+
 app.use(express.json());
 
 connectRedis();

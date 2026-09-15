@@ -1,0 +1,117 @@
+# Project Application API Endpoints
+
+## Authentication
+
+All endpoints require authentication through `authMiddleware`.
+
+---
+
+## POST /own-idea
+
+**Purpose:** Submit an application based on the authenticated user's own project idea.
+
+**Authentication:** Required
+
+**Controller:** `projectApplicationController.submitOwnIdea`
+
+**Expected behavior:**
+
+* Authenticated requests should reach the `submitOwnIdea` controller.
+* Unauthenticated requests should be rejected.
+* Invalid request data should be handled appropriately.
+* Successful submissions should return the application's expected success response.
+* Controller/service errors should be handled through the application's existing error-handling mechanism.
+
+---
+
+## POST /faculty-project
+
+**Purpose:** Apply for a faculty-provided project.
+
+**Authentication:** Required
+
+**Controller:** `projectApplicationController.applyFacultyProject`
+
+**Expected behavior:**
+
+* Authenticated requests should reach the `applyFacultyProject` controller.
+* Unauthenticated requests should be rejected.
+* Invalid request data should be handled appropriately.
+* Successful applications should return the application's expected success response.
+* Controller/service errors should be handled appropriately.
+
+---
+
+## POST /project-bank
+
+**Purpose:** Apply for a project from the project bank.
+
+**Authentication:** Required
+
+**Controller:** `projectApplicationController.applyProjectBank`
+
+**Expected behavior:**
+
+* Authenticated requests should reach the `applyProjectBank` controller.
+* Unauthenticated requests should be rejected.
+* Invalid request data should be handled appropriately.
+* Successful applications should return the application's expected success response.
+* Controller/service errors should be handled appropriately.
+
+---
+
+## GET /my
+
+**Purpose:** Retrieve applications belonging to the currently authenticated user.
+
+**Authentication:** Required
+
+**Controller:** `projectApplicationController.getMyApplications`
+
+**Expected behavior:**
+
+* Authenticated requests should reach the `getMyApplications` controller.
+* Unauthenticated requests should be rejected.
+* Only applications belonging to the authenticated user should be returned.
+* A user with no applications should receive the application's expected empty-result response.
+* Service/database errors should be handled appropriately.
+
+---
+
+## GET /:applicationId
+
+**Purpose:** Retrieve details of a specific project application.
+
+**Authentication:** Required
+
+**Path parameter:**
+
+* `applicationId` — ID of the application to retrieve.
+
+**Controller:** `projectApplicationController.getApplicationById`
+
+**Expected behavior:**
+
+* Authenticated requests should reach the `getApplicationById` controller.
+* Unauthenticated requests should be rejected.
+* A valid application ID should return the corresponding application.
+* An invalid application ID should be handled appropriately.
+* A non-existent application should be handled appropriately.
+* Unauthorized access should be rejected if ownership/authorization rules apply.
+* Service/database errors should be handled appropriately.
+
+---
+
+## Route Ordering
+
+The `/my` endpoint is declared before `/:applicationId`.
+
+This ordering must be preserved because `/my` could otherwise be interpreted as:
+
+`applicationId = "my"`
+
+Therefore:
+
+`GET /my`
+
+must resolve to `getMyApplications`, not `getApplicationById`.
