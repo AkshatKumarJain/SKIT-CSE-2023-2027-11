@@ -51,9 +51,26 @@ jobs:
           GEMINI_MODEL: gemini-3.6-flash
         run: npm run ai:generate-tests
 
+      - name: Inspect generated tests
+        if: always()
+        run: |
+          echo "Current directory:"
+          pwd
+
+          echo "Root files:"
+          ls -la
+
+          echo "Generated test directory:"
+          ls -la .ai-generated-tests || true
+
+          echo "Generated test files:"
+          find .ai-generated-tests -type f -print 2>/dev/null || true
+
       - name: Upload generated tests
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ai-generated-tests
           path: .ai-generated-tests/
+          if-no-files-found: warn
 

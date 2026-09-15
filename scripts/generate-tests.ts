@@ -317,16 +317,11 @@ Return complete runnable test files.
             recursive: true
         }
     );
-
-    for (
-        const test of result.tests
-    ) {
+    console.log(`Generated test count: ${result.tests.length}`);
+    for (const test of result.tests) {
 
         const filePath =
-    getSafeOutputPath(
-        outputDirectory,
-        test.filePath
-    );
+    getSafeOutputPath(outputDirectory, test.filePath);
 
         fs.mkdirSync(
             path.dirname(filePath),
