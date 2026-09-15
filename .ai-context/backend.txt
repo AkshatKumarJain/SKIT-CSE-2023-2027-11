@@ -1,0 +1,55 @@
+BACKEND
+
+TECHNOLOGY:
+
+Node.js
+Express
+TypeScript
+MongoDB
+Mongoose
+Redis
+Docker
+cloudinary
+
+ARCHITECTURE:
+
+Routes
+    ↓
+Controllers
+    ↓
+Services
+    ↓
+Models / external dependencies
+
+AUTHENTICATION:
+
+Authentication uses JWT(using a special npm package named "redis-jwt-auth").
+
+Redis is used for token-related functionality
+and caching-related functionality(inside redis-jwt-auth) and in otp/token handling for forgot/reset password of user.
+
+UNIT TESTING:
+
+Primarily test:
+
+- Services
+- Business logic
+- Utilities
+
+External dependencies should normally be mocked
+for unit tests.
+
+INTEGRATION TESTING:
+
+Test:
+
+- HTTP endpoints
+- Routes
+- Middleware
+- Controllers
+- Services
+- Relevant database behavior
+
+IMPORTANT:
+
+Do not modify production code while generating tests.
