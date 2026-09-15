@@ -51,3 +51,9 @@ jobs:
           GEMINI_MODEL: gemini-3.6-flash
         run: npm run ai:generate-tests
 
+      - name: Upload generated tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-generated-tests
+          path: .ai-generated-tests/
+
