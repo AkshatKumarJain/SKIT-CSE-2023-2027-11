@@ -72,5 +72,6 @@ jobs:
         with:
           name: ai-generated-tests
           path: .ai-generated-tests/
-          if-no-files-found: warn
+          if-no-files-found: error
+          include-hidden-files: true
 
