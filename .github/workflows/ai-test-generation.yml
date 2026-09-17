@@ -1,0 +1,77 @@
+name: AI Test Generation
+
+on:
+  pull_request:
+    branches:
+      - dev
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+jobs:
+  ai-test-generation:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Get changed files
+        run: |
+          git diff --name-only \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}" \
+            > changed-files.txt
+
+          echo "================================"
+          echo "Changed files:"
+          echo "================================"
+
+          cat changed-files.txt
+
+      - name: Generate AI tests
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.6-flash
+        run: npm run ai:generate-tests
+
+      - name: Inspect generated tests
+        if: always()
+        run: |
+          echo "Current directory:"
+          pwd
+
+          echo "Root files:"
+          ls -la
+
+          echo "Generated test directory:"
+          ls -la .ai-generated-tests || true
+
+          echo "Generated test files:"
+          find .ai-generated-tests -type f -print 2>/dev/null || true
+
+      - name: Upload generated tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-generated-tests
+          path: .ai-generated-tests/
+          if-no-files-found: error
+          include-hidden-files: true
+

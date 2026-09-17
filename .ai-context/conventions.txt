@@ -1,0 +1,11 @@
+Backend:
+- TypeScript
+- AppError for expected application errors
+- asyncHandler for async controllers
+- Services contain business logic
+- Controllers handle HTTP concerns
+
+Frontend:
+- Javascript
+- React components
+- API calls through the project's API layer
