@@ -1,10 +1,9 @@
-import { mockRequest } from './api'
-import { facultyMembers, facultyProjects } from '../data/mockData'
+import { apiFetch } from './api'
 
 export function getFacultyMembers() {
-  return mockRequest(facultyMembers)
+  return apiFetch('/faculty')
 }
 
 export function getFacultyProjects() {
-  return mockRequest(facultyProjects)
+  return apiFetch('/faculty-projects')
 }

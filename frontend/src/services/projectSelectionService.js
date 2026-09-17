@@ -1,11 +1,9 @@
-import { mockRequest } from './api'
-import { projectSelectionStages } from '../data/mockData'
+import { apiFetch } from './api'
 
 export function getProjectSelectionStages() {
-  return mockRequest(projectSelectionStages)
+  return apiFetch('/selection-stages')
 }
 
 export function getProjectSelectionStage(stageId) {
-  const stage = projectSelectionStages.find((item) => item.id === stageId)
-  return mockRequest(stage || null)
+  return apiFetch(`/selection-stages/${stageId}`)
 }

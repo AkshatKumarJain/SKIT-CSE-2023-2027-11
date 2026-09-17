@@ -1,6 +1,5 @@
-import { mockRequest } from './api'
-import { projectBankItems } from '../data/mockData'
+import { apiFetch } from './api'
 
 export function getProjectBankItems() {
-  return mockRequest(projectBankItems)
+  return apiFetch('/project-bank')
 }
