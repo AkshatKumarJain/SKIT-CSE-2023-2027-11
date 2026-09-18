@@ -10,5 +10,7 @@ const router = express.Router();
 router.post("/login", userController.login);
 router.post("/logout", requireAuth, userController.logout);
 router.post("/refresh", requireAuth, userController.refresh);
+router.post("/forgot-password", userController.forgotPassword);
+router.post("/reset-password", userController.resetPassword);
 
 export default router;
