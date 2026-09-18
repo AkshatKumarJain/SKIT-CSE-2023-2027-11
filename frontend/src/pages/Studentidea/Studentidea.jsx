@@ -1,13 +1,114 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CheckCircle2, Save, Send } from 'lucide-react'
-import PageHeader from '../../components/common/PageHeader'
-import MentorPicker from '../../components/project/MentorPicker'
-import StageLocked from '../../components/common/StageLocked'
+import { CheckCircle2, Save, Send, Search, Check, Lock } from 'lucide-react'
 import { getProjectSelectionStage } from '../../services/projectSelectionService'
 import { getFacultyMembers } from '../../services/facultyService'
 import { domains } from '../../data/mockData'
-import './Studentidea.css'
+import '../Projectselection/Projectselection.css'
+
+function initials(name) {
+  return name.replace('Dr. ', '').replace('Prof. ', '').split(' ').map((part) => part[0]).join('')
+}
+
+function StageLocked({ title, status, windowLabel }) {
+  const navigate = useNavigate()
+  const message =
+    status === 'UPCOMING'
+      ? 'This stage has not opened yet. Check back once it becomes active.'
+      : 'This stage is now closed and is no longer accepting submissions.'
+
+  return (
+    <div className="locked-state">
+      <div className="locked-state-icon">
+        <Lock size={22} strokeWidth={2} />
+      </div>
+      <div className="locked-state-title">{title} is {status === 'UPCOMING' ? 'not open yet' : 'closed'}</div>
+      <p className="locked-state-text">{message}</p>
+      {windowLabel ? <div className="stage-window">{windowLabel}</div> : null}
+      <button type="button" className="btn btn-secondary" onClick={() => navigate('/project-selection')}>
+        Back to Project Selection
+      </button>
+    </div>
+  )
+}
+
+function MentorPicker({ selectedId, onSelect }) {
+  const [facultyMembers, setFacultyMembers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+    getFacultyMembers().then((data) => {
+      if (isMounted) {
+        setFacultyMembers(data)
+        setLoading(false)
+      }
+    })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  if (loading) {
+    return <div className="loading-state">Loading faculty mentors...</div>
+  }
+
+  const filtered = facultyMembers.filter((faculty) => {
+    const term = query.toLowerCase()
+    return (
+      faculty.name.toLowerCase().includes(term) ||
+      faculty.specialization.toLowerCase().includes(term) ||
+      faculty.department.toLowerCase().includes(term)
+    )
+  })
+
+  return (
+    <div>
+      <div className="search-control">
+        <Search size={15} strokeWidth={2} />
+        <input
+          type="text"
+          value={query}
+          placeholder="Search mentors by name, department or specialization"
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
+      <div className="mentor-list">
+        {filtered.length ? (
+          filtered.map((faculty) => {
+            const isSelected = faculty.id === selectedId
+            return (
+              <button
+                type="button"
+                key={faculty.id}
+                className={isSelected ? 'mentor-list-item selected' : 'mentor-list-item'}
+                onClick={() => onSelect(faculty.id)}
+              >
+                <div className="mentor-list-avatar">{initials(faculty.name)}</div>
+                <div className="mentor-list-info">
+                  <div className="mentor-list-name">{faculty.name}</div>
+                  <div className="mentor-list-dept">{faculty.department}</div>
+                  <div className="mentor-list-spec">{faculty.specialization}</div>
+                </div>
+                {isSelected ? (
+                  <div className="mentor-list-check">
+                    <Check size={14} strokeWidth={2.5} />
+                  </div>
+                ) : null}
+              </button>
+            )
+          })
+        ) : (
+          <div className="empty-state">
+            <div className="empty-state-title">No mentors found</div>
+            <p className="empty-state-text">Try a different search term.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function buildInitialForm(project) {
   return {
@@ -19,10 +120,6 @@ function buildInitialForm(project) {
     expectedOutcome: project?.expectedOutcome || '',
     technologies: Array.isArray(project?.technologies) ? project.technologies.join(', ') : ''
   }
-}
-
-function initials(name) {
-  return name.replace('Dr. ', '').replace('Prof. ', '').split(' ').map((part) => part[0]).join('')
 }
 
 function StudentIdea() {
@@ -94,7 +191,9 @@ function StudentIdea() {
   if (stageLoading) {
     return (
       <div>
-        <PageHeader heading="Student Proposed Idea" />
+        <div className="page-header">
+          <h1 className="page-heading">Student Proposed Idea</h1>
+        </div>
         <div className="loading-state">Checking stage availability...</div>
       </div>
     )
@@ -103,7 +202,9 @@ function StudentIdea() {
   if (stage && stage.status !== 'OPEN') {
     return (
       <div>
-        <PageHeader heading="Student Proposed Idea" />
+        <div className="page-header">
+          <h1 className="page-heading">Student Proposed Idea</h1>
+        </div>
         <StageLocked title={stage.title} status={stage.status} windowLabel={stage.windowLabel} />
       </div>
     )
@@ -112,7 +213,9 @@ function StudentIdea() {
   if (submitted) {
     return (
       <div>
-        <PageHeader heading="Student Proposed Idea" />
+        <div className="page-header">
+          <h1 className="page-heading">Student Proposed Idea</h1>
+        </div>
         <div className="submission-result">
           <div className="submission-result-icon">
             <CheckCircle2 size={26} strokeWidth={2} />
@@ -133,14 +236,18 @@ function StudentIdea() {
 
   return (
     <div>
-      <PageHeader
-        heading="Student Proposed Idea"
-        subtext={
-          source
-            ? 'Review the pre-filled project details below, complete the remaining fields and submit your application.'
-            : 'Propose your own project topic and request a faculty mentor for approval.'
-        }
-      />
+      <div className="page-header">
+        <div className="page-header-top">
+          <div>
+            <h1 className="page-heading">Student Proposed Idea</h1>
+            <p className="page-subtext">
+              {source
+                ? 'Review the pre-filled project details below, complete the remaining fields and submit your application.'
+                : 'Propose your own project topic and request a faculty mentor for approval.'}
+            </p>
+          </div>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit}>
         <div className="form-section">
