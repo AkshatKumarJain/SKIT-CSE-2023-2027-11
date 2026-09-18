@@ -1,16 +1,58 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SearchX } from 'lucide-react'
-import PageHeader from '../../components/common/PageHeader'
-import SearchInput from '../../components/common/SearchInput'
-import EmptyState from '../../components/common/EmptyState'
-import StageLocked from '../../components/common/StageLocked'
-import StatusPill from '../../components/common/StatusPill'
-import ProjectDrawer from '../../components/project/ProjectDrawer'
+import { Search, SearchX, Lock, X } from 'lucide-react'
 import { getProjectBankItems } from '../../services/projectBankService'
 import { getProjectSelectionStage } from '../../services/projectSelectionService'
 import { domains } from '../../data/mockData'
+import '../Projectselection/Projectselection.css'
 import './Projectbank.css'
+
+function StatusPill({ status, label }) {
+  return <span className={`status-pill ${status.toLowerCase()}`}>{label || status}</span>
+}
+
+function StageLocked({ title, status, windowLabel }) {
+  const navigate = useNavigate()
+  const message =
+    status === 'UPCOMING'
+      ? 'This stage has not opened yet. Check back once it becomes active.'
+      : 'This stage is now closed and is no longer accepting submissions.'
+
+  return (
+    <div className="locked-state">
+      <div className="locked-state-icon">
+        <Lock size={22} strokeWidth={2} />
+      </div>
+      <div className="locked-state-title">{title} is {status === 'UPCOMING' ? 'not open yet' : 'closed'}</div>
+      <p className="locked-state-text">{message}</p>
+      {windowLabel ? <div className="stage-window">{windowLabel}</div> : null}
+      <button type="button" className="btn btn-secondary" onClick={() => navigate('/project-selection')}>
+        Back to Project Selection
+      </button>
+    </div>
+  )
+}
+
+function ProjectDrawer({ open, onClose, title, subtitle, children }) {
+  if (!open) return null
+
+  return (
+    <div className="project-drawer-overlay" onClick={onClose}>
+      <div className="project-drawer" onClick={(event) => event.stopPropagation()}>
+        <div className="project-drawer-header">
+          <div>
+            <h2 className="project-drawer-title">{title}</h2>
+            {subtitle ? <p className="project-drawer-subtitle">{subtitle}</p> : null}
+          </div>
+          <button type="button" className="project-drawer-close" onClick={onClose} aria-label="Close">
+            <X size={16} strokeWidth={2} />
+          </button>
+        </div>
+        <div className="project-drawer-body">{children}</div>
+      </div>
+    </div>
+  )
+}
 
 function ProjectBank() {
   const navigate = useNavigate()
@@ -53,7 +95,9 @@ function ProjectBank() {
   if (loading) {
     return (
       <div>
-        <PageHeader heading="Project Bank" />
+        <div className="page-header">
+          <h1 className="page-heading">Project Bank</h1>
+        </div>
         <div className="loading-state">Loading project bank...</div>
       </div>
     )
@@ -62,7 +106,9 @@ function ProjectBank() {
   if (stage && stage.status !== 'OPEN') {
     return (
       <div>
-        <PageHeader heading="Project Bank" />
+        <div className="page-header">
+          <h1 className="page-heading">Project Bank</h1>
+        </div>
         <StageLocked title={stage.title} status={stage.status} windowLabel={stage.windowLabel} />
       </div>
     )
@@ -70,10 +116,17 @@ function ProjectBank() {
 
   return (
     <div>
-      <PageHeader
-        heading="Project Bank"
-        subtext="Pre-approved project topics you can pick from if you have not been allotted a project yet."
-      />
+      <div className="page-header">
+        <div className="page-header-top">
+          <div>
+            <h1 className="page-heading">Project Bank</h1>
+            <p className="page-subtext">
+              Pre-approved project topics you can pick from if you have not been allotted a
+              project yet.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="status-banner">
         <div className="status-banner-text">
@@ -93,7 +146,15 @@ function ProjectBank() {
       </div>
 
       <div className="filter-bar">
-        <SearchInput value={query} onChange={setQuery} placeholder="Search project bank" />
+        <div className="search-control">
+          <Search size={15} strokeWidth={2} />
+          <input
+            type="text"
+            value={query}
+            placeholder="Search project bank"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
         <select
           className="filter-select"
           value={domain}
@@ -132,11 +193,13 @@ function ProjectBank() {
           ))}
         </div>
       ) : (
-        <EmptyState
-          icon={SearchX}
-          title="No matching projects"
-          text="Try adjusting your search or choosing a different domain."
-        />
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <SearchX size={20} strokeWidth={2} />
+          </div>
+          <div className="empty-state-title">No matching projects</div>
+          <p className="empty-state-text">Try adjusting your search or choosing a different domain.</p>
+        </div>
       )}
 
       <ProjectDrawer
