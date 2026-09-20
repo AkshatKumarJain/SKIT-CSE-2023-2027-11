@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema<IUser>(
             type: String,
             default: ""
         },
+        department: {
+            type: String,
+            required: true
+        }
         // resetOTP: {
         //     type: String,
         //     default: ""

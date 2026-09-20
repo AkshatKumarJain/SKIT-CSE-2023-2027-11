@@ -10,6 +10,7 @@ export interface IUser{
     profilePhotoPublicId: string
     role: "student" | "teacher" | "admin";
     phoneNo: string;
+    department: string;
     // resetOTP: string;
     // resetOTPExpiresAt: number; // will not store otp in database instead use redis for storing and for ttl of otp
     comparePassword(password: string): Promise<boolean>;
