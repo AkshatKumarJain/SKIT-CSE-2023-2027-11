@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./Profile.css";
+import { logoutUser } from "../../services/authService";
 
 function Profile() {
     // Temporary data for frontend development.
@@ -20,6 +21,7 @@ function Profile() {
     const [isEditingMobile, setIsEditingMobile] = useState(false);
     const [mobileNumber, setMobileNumber] = useState(profile.mobile);
     const [mobileError, setMobileError] = useState("");
+
     const getInitial = () => {
         return profile.name?.trim().charAt(0).toUpperCase() || "A";
     };
@@ -59,6 +61,16 @@ function Profile() {
         setMobileError("");
     };
 
+    const handleLogout = async () => {
+        try {
+            await logoutUser();
+
+            console.log("Logout successful");
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
+
     return (
         <div className="profile-page">
             <div className="profile-card">
@@ -77,7 +89,10 @@ function Profile() {
                         </div>
                     )}
 
-                    <label htmlFor="profile-image" className="upload-button">
+                    <label
+                        htmlFor="profile-image"
+                        className="upload-button"
+                    >
                         Upload Picture
                     </label>
 
@@ -129,21 +144,31 @@ function Profile() {
                                 <input
                                     type="tel"
                                     value={mobileNumber}
-                                    onChange={(e) => setMobileNumber(e.target.value)}
+                                    onChange={(e) =>
+                                        setMobileNumber(e.target.value)
+                                    }
                                     maxLength="10"
                                     placeholder="Enter mobile number"
                                 />
 
                                 {mobileError && (
-                                    <p className="mobile-error">{mobileError}</p>
+                                    <p className="mobile-error">
+                                        {mobileError}
+                                    </p>
                                 )}
 
                                 <div className="mobile-actions">
-                                    <button type="button" onClick={handleSaveMobile}>
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveMobile}
+                                    >
                                         Save
                                     </button>
 
-                                    <button type="button" onClick={handleCancelMobile}>
+                                    <button
+                                        type="button"
+                                        onClick={handleCancelMobile}
+                                    >
                                         Cancel
                                     </button>
                                 </div>
@@ -152,33 +177,32 @@ function Profile() {
                             <p>{profile.mobile}</p>
                         )}
                     </div>
+                </div>
 
-                                        </div>
-
-                    <div className="profile-actions">
-                        {!isEditingMobile && (
-                            <button
-                                type="button"
-                                onClick={handleEditMobile}
-                            >
-                                Edit Mobile Number
-                            </button>
-                        )}
-
-                        <button type="button">
-                            Change Password
-                        </button>
-
+                <div className="profile-actions">
+                    {!isEditingMobile && (
                         <button
                             type="button"
-                            className="logout-button"
+                            onClick={handleEditMobile}
                         >
-                            Logout
+                            Edit Mobile Number
                         </button>
-                    </div>
+                    )}
+
+                    <button type="button">
+                        Change Password
+                    </button>
+
+                    <button
+                        type="button"
+                        className="logout-button"
+                        onClick={handleLogout}
+                    >
+                        Logout
+                    </button>
                 </div>
             </div>
-        
+        </div>
     );
 }
 
