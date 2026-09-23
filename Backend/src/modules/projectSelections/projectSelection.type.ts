@@ -1,11 +1,6 @@
 import mongoose, { HydratedDocument } from "mongoose";
 
-export const SELECTION_PHASES = [
-    "OWN_IDEA",
-    "FACULTY_PROJECT",
-    "PROJECT_BANK"
-] as const;
-
+export const SELECTION_PHASES = ["OWN_IDEA", "FACULTY_PROJECT", "PROJECT_BANK"] as const;
 export type SelectionPhase = typeof SELECTION_PHASES[number];
 
 export interface IProjectSelectionWindow {
