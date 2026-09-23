@@ -1,3 +1,40 @@
-import {Request,Response} from "express"; import service from "./team.service";
-class TeamController{async create(req:Request,res:Response){return res.status(201).json({success:true,data:await service.create(req.user?.userId as string)});} async mine(req:Request,res:Response){return res.json({success:true,data:await service.mine(req.user?.userId as string)});} async byId(req:Request,res:Response){return res.json({success:true,data:await service.byId(req.user?.userId as string,String(req.params.teamId))});} async available(req:Request,res:Response){return res.json({success:true,data:await service.available(req.user?.userId as string)});} async request(req:Request,res:Response){return res.status(201).json({success:true,data:await service.request(req.user?.userId as string,String(req.params.teamId),req.body?.studentId)});} async requests(req:Request,res:Response){return res.json({success:true,data:await service.teamRequests(req.user?.userId as string,String(req.params.teamId))});} async received(req:Request,res:Response){return res.json({success:true,data:await service.received(req.user?.userId as string)});} async accept(req:Request,res:Response){return res.json({success:true,data:await service.accept(req.user?.userId as string,String(req.params.requestId))});} async reject(req:Request,res:Response){return res.json({success:true,data:await service.reject(req.user?.userId as string,String(req.params.requestId))});} async cancel(req:Request,res:Response){return res.json({success:true,data:await service.cancel(req.user?.userId as string,String(req.params.requestId))});} async complete(req:Request,res:Response){return res.json({success:true,data:await service.complete(req.user?.userId as string,String(req.params.teamId))});}}
-export = new TeamController();
+import { Request, Response } from "express";
+import { AsyncHandler } from "../../middlewares/asyncHandler";
+import teamService from "./team.service";
+
+const getUserId = (req: Request): string => req.user?.userId || "";
+
+const requireStudent = (req: Request): string => {
+    const userId = getUserId(req);
+    if (!userId) throw new Error("Authenticated user id is missing");
+    return userId;
+};
+
+class TeamController {
+    create = AsyncHandler(async (req: Request, res: Response) => {
+        const team = await teamService.createTeam(requireStudent(req));
+        res.status(201).json({ message: "Team created successfully", team });
+    });
+
+    myTeam = AsyncHandler(async (req: Request, res: Response) => {
+        const team = await teamService.getMyTeam(requireStudent(req));
+        res.status(200).json({ team });
+    });
+
+    availableMembers = AsyncHandler(async (req: Request, res: Response) => {
+        const students = await teamService.getAvailableMembers(requireStudent(req), req.params.teamId);
+        res.status(200).json({ students });
+    });
+
+    getById = AsyncHandler(async (req: Request, res: Response) => {
+        const team = await teamService.getTeam(requireStudent(req), req.params.teamId);
+        res.status(200).json({ team });
+    });
+
+    complete = AsyncHandler(async (req: Request, res: Response) => {
+        const team = await teamService.completeTeam(requireStudent(req), req.params.teamId);
+        res.status(200).json({ message: "Team completed successfully", team });
+    });
+}
+
+export default new TeamController();

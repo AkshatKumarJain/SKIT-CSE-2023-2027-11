@@ -1,2 +1,14 @@
-import express from "express"; import {authMiddleware} from "redis-jwt-auth"; import type {RequestHandler} from "express"; import c from "../teams/team.controller";
-const auth=authMiddleware({required:true}) as RequestHandler; const r=express.Router(); r.get("/my",auth,c.received); r.patch("/:requestId/accept",auth,c.accept); r.patch("/:requestId/reject",auth,c.reject); r.patch("/:requestId/cancel",auth,c.cancel); export default r;
+import express from "express";
+import type { RequestHandler } from "express";
+import { authMiddleware } from "redis-jwt-auth";
+import teamRequestController from "./teamRequest.controller";
+
+const requireAuth = authMiddleware({ required: true }) as RequestHandler;
+const router = express.Router();
+
+router.get("/my", requireAuth, teamRequestController.myRequests);
+router.patch("/:requestId/accept", requireAuth, teamRequestController.accept);
+router.patch("/:requestId/reject", requireAuth, teamRequestController.reject);
+router.patch("/:requestId/cancel", requireAuth, teamRequestController.cancel);
+
+export default router;

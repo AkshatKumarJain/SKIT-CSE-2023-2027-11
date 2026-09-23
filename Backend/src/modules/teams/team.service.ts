@@ -1,32 +1,202 @@
 import mongoose from "mongoose";
-import teamModel from "./team.model";
-import requestModel from "../teamRequests/teamRequest.model";
-import userModel from "../users/user.model";
+import User from "../users/user.model";
 import { AppError } from "../../errors/AppError";
 import { ERROR_CODES } from "../../errors/errorCodes";
-import { MAX_ADDITIONAL_MEMBERS, MAX_TEAM_SIZE, MIN_TEAM_SIZE } from "./team.type";
+import Team from "./team.model";
+import { ITeam, MAX_ADDITIONAL_MEMBERS, MAX_TEAM_SIZE, MIN_TEAM_SIZE } from "./team.type";
+import TeamRequest from "../teamRequests/teamRequest.model";
 
-const active = ["FORMING", "COMPLETED"] as const;
-const sid = (x: mongoose.Types.ObjectId | string) => x.toString();
+const fail = (message: string, statusCode: number, code: string): never => {
+    throw new AppError(message, statusCode, code);
+};
+
+const activeTeamFilter = {
+    status: { $in: ["FORMING", "COMPLETED"] },
+};
+
+export type UserWithClass = {
+    _id: mongoose.Types.ObjectId;
+    name: string;
+    email: string;
+    role: string;
+    branch?: string | null;
+    section?: string | null;
+    class?: string | null;
+};
+
+const getClassValue = (user: UserWithClass): string | undefined => {
+    const branch = typeof user.branch === "string" ? user.branch.trim().toLowerCase() : "";
+    const section = typeof user.section === "string" ? user.section.trim().toLowerCase() : "";
+    const className = typeof user.class === "string" ? user.class.trim().toLowerCase() : "";
+
+    if (className) return `class:${className}`;
+    if (branch || section) return `branch:${branch}|section:${section}`;
+    return undefined;
+};
+
+export const validateSameClass = (leader: UserWithClass, student: UserWithClass): void => {
+    const leaderClass = getClassValue(leader);
+    const studentClass = getClassValue(student);
+
+    if (!leaderClass || !studentClass) {
+        fail(
+            "Same-class validation requires class, or branch and section, to be present on User",
+            400,
+            ERROR_CODES.VALIDATION_ERROR
+        );
+    }
+
+    if (leaderClass !== studentClass) {
+        fail("Student does not belong to the same class/group as the team leader", 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+};
+
+export const validateStudentTeamAvailability = async (studentId: string): Promise<void> => {
+    const activeTeam = await Team.exists({
+        ...activeTeamFilter,
+        $or: [{ leaderId: studentId }, { memberIds: studentId }],
+    });
+
+    if (activeTeam) {
+        fail("Student is already in an active team", 409, ERROR_CODES.VALIDATION_ERROR);
+    }
+};
+
+export const validateMemberEligibility = async (leaderId: string, studentId: string): Promise<UserWithClass> => {
+    if (!mongoose.isValidObjectId(studentId)) {
+        fail("Invalid student id", 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    if (leaderId === studentId) {
+        fail("Team leader cannot be added as a member", 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    const student = await User.findById(studentId).select("name email role branch section class").lean() as UserWithClass | null;
+    if (!student) fail("Student not found", 404, ERROR_CODES.STUDENT_NOT_FOUND);
+    if (student.role !== "student") fail("Selected user is not a student", 400, ERROR_CODES.VALIDATION_ERROR);
+
+    await validateStudentTeamAvailability(studentId);
+
+    const leader = await User.findById(leaderId).select("name email role branch section class").lean() as UserWithClass | null;
+    if (!leader) fail("Team leader not found", 404, ERROR_CODES.USER_NOT_FOUND);
+
+    validateSameClass(leader, student);
+    return student;
+};
+
+const serializeTeam = (team: ITeam) => team;
 
 class TeamService {
-  private fail(message: string, status = 400, code: string = ERROR_CODES.VALIDATION_ERROR): never { throw new AppError(message, status, code); }
-  private async student(uid: string) { const u = await userModel.findById(uid); if (!u) this.fail("Student not found",404,ERROR_CODES.STUDENT_NOT_FOUND); if (u.role !== "student") this.fail("Only students can perform team actions",403,ERROR_CODES.FORBIDDEN); return u; }
-  private async activeTeam(uid: mongoose.Types.ObjectId|string) { return teamModel.findOne({status:{$in:active},$or:[{leaderId:uid},{memberIds:uid}]}); }
-  private branch(u: unknown) { const b=(u as Record<string,unknown>).branch; return typeof b === "string" && b.trim() ? b.trim().toLowerCase() : null; }
-  private sameClass(a: unknown,b: unknown) { const x=this.branch(a), y=this.branch(b); if(!x||!y) this.fail("Same-class validation requires branch information"); if(x!==y) this.fail("Requested student is not in the same class/branch"); }
-  private async leaderTeam(uid:string,tid:string) { if(!mongoose.isValidObjectId(tid)) this.fail("Invalid team id"); const t=await teamModel.findById(tid); if(!t) this.fail("Team not found",404,ERROR_CODES.NOT_FOUND); if(sid(t.leaderId)!==uid) this.fail("Only the team leader can perform this action",403,ERROR_CODES.FORBIDDEN); if(t.status==="CANCELLED") this.fail("Team is cancelled"); return t; }
-  async create(uid:string) { const u=await this.student(uid); if(await this.activeTeam(u._id)) this.fail("Student already belongs to an active team"); return teamModel.create({leaderId:u._id,memberIds:[],status:"FORMING"}); }
-  async mine(uid:string) { await this.student(uid); const t=await this.activeTeam(uid); if(!t) this.fail("No active team found",404,ERROR_CODES.NOT_FOUND); return t.populate([{path:"leaderId",select:"name email branch phoneNo"},{path:"memberIds",select:"name email branch phoneNo"}]); }
-  async byId(uid:string,tid:string) { if(!mongoose.isValidObjectId(tid)) this.fail("Invalid team id"); const t=await teamModel.findById(tid); if(!t) this.fail("Team not found",404,ERROR_CODES.NOT_FOUND); if(sid(t.leaderId)!==uid&&!t.memberIds.some(x=>sid(x)===uid)) this.fail("You are not a member of this team",403,ERROR_CODES.FORBIDDEN); return t.populate([{path:"leaderId",select:"name email branch phoneNo"},{path:"memberIds",select:"name email branch phoneNo"}]); }
-  async available(uid:string) { const u=await this.student(uid); const t=await this.activeTeam(u._id); if(!t||sid(t.leaderId)!==uid||t.status!=="FORMING") return []; if(1+t.memberIds.length>=MAX_TEAM_SIZE) return []; const b=this.branch(u); if(!b) this.fail("Same-class validation requires branch information"); const students=await userModel.find({role:"student",branch:b,_id:{$nin:[u._id,...t.memberIds]}}).select("name email branch phoneNo").sort({name:1}); const result=[]; for(const s of students) if(!(await this.activeTeam(s._id))) result.push(s); return result; }
-  async request(uid:string,tid:string,studentId:string) { const t=await this.leaderTeam(uid,tid); if(t.status!=="FORMING") this.fail("Member requests are closed for this team"); if(!mongoose.isValidObjectId(studentId)) this.fail("Invalid student id"); if(t.memberIds.length>=MAX_ADDITIONAL_MEMBERS) this.fail("Maximum 3 additional members allowed"); const leader=await this.student(uid), member=await this.student(studentId); if(sid(member._id)===uid) this.fail("Leader cannot be a member"); if(t.memberIds.some(x=>sid(x)===sid(member._id))) this.fail("Student is already a team member"); if(await this.activeTeam(member._id)) this.fail("Student already belongs to another active team"); this.sameClass(leader,member); if(await requestModel.exists({teamId:t._id,requestedStudentId:member._id,status:"PENDING"})) this.fail("Duplicate pending request"); return requestModel.create({teamId:t._id,requesterId:t.leaderId,requestedStudentId:member._id,status:"PENDING"}); }
-  async teamRequests(uid:string,tid:string) { const t=await this.leaderTeam(uid,tid); return requestModel.find({teamId:t._id}).sort({createdAt:-1}).populate("requestedStudentId","name email branch phoneNo"); }
-  async received(uid:string) { await this.student(uid); return requestModel.find({requestedStudentId:uid}).sort({createdAt:-1}).populate("teamId").populate("requesterId","name email branch phoneNo"); }
-  private async pending(uid:string,rid:string) { if(!mongoose.isValidObjectId(rid)) this.fail("Invalid request id"); const r=await requestModel.findById(rid); if(!r) this.fail("Team request not found",404,ERROR_CODES.NOT_FOUND); if(r.status!=="PENDING") this.fail("Request has already been processed"); if(sid(r.requestedStudentId)!==uid) this.fail("Only the requested student can respond",403,ERROR_CODES.FORBIDDEN); return r; }
-  async accept(uid:string,rid:string) { const r=await this.pending(uid,rid); const session=await mongoose.startSession(); try { let result; await session.withTransaction(async()=>{ const fresh=await requestModel.findOne({_id:r._id,status:"PENDING"}).session(session); if(!fresh) this.fail("Request has already been processed"); const t=await teamModel.findOne({_id:fresh.teamId,status:"FORMING",$expr:{$lt:[{$size:"$memberIds"},MAX_ADDITIONAL_MEMBERS]}}).session(session); if(!t) this.fail("Team has reached maximum capacity or is unavailable"); const member=await userModel.findById(uid).session(session); if(!member||member.role!=="student") this.fail("Student not found",404,ERROR_CODES.STUDENT_NOT_FOUND); if(await teamModel.findOne({_id:{$ne:t._id},status:{$in:active},$or:[{leaderId:member._id},{memberIds:member._id}]}).session(session)) this.fail("Student already belongs to another active team"); const leader=await userModel.findById(t.leaderId).session(session); if(!leader) this.fail("Team leader not found",404,ERROR_CODES.STUDENT_NOT_FOUND); this.sameClass(leader,member); const updated=await teamModel.findOneAndUpdate({_id:t._id,status:"FORMING",$expr:{$lt:[{$size:"$memberIds"},MAX_ADDITIONAL_MEMBERS]},memberIds:{$ne:member._id}},{$addToSet:{memberIds:member._id}},{new:true,session}); if(!updated) this.fail("Maximum team size of 4 students reached"); fresh.status="ACCEPTED"; await fresh.save({session}); result=fresh; }); return result; } finally { await session.endSession(); } }
-  async reject(uid:string,rid:string) { const r=await this.pending(uid,rid); r.status="REJECTED"; return r.save(); }
-  async cancel(uid:string,rid:string) { if(!mongoose.isValidObjectId(rid)) this.fail("Invalid request id"); const r=await requestModel.findById(rid); if(!r) this.fail("Team request not found",404,ERROR_CODES.NOT_FOUND); if(r.status!=="PENDING") this.fail("Only pending requests can be cancelled"); const t=await teamModel.findById(r.teamId); if(!t) this.fail("Team not found",404,ERROR_CODES.NOT_FOUND); if(sid(t.leaderId)!==uid) this.fail("Only the team leader can cancel this request",403,ERROR_CODES.FORBIDDEN); r.status="CANCELLED"; return r.save(); }
-  async complete(uid:string,tid:string) { const t=await this.leaderTeam(uid,tid); if(t.status!=="FORMING") this.fail("Team is not in forming state"); const n=1+t.memberIds.length; if(n<MIN_TEAM_SIZE||n>MAX_TEAM_SIZE) this.fail("Team must contain between 2 and 4 students"); t.status="COMPLETED"; return t.save(); }
+    async createTeam(studentId: string) {
+        const student = await User.findById(studentId).select("_id role");
+        if (!student) fail("Student not found", 404, ERROR_CODES.STUDENT_NOT_FOUND);
+        if (student.role !== "student") fail("Only students can create teams", 403, ERROR_CODES.FORBIDDEN);
+
+        await validateStudentTeamAvailability(studentId);
+
+        const team = await Team.create({
+            leaderId: student._id,
+            memberIds: [],
+            status: "FORMING",
+        });
+
+        return serializeTeam(team.toObject() as ITeam);
+    }
+
+    async getMyTeam(studentId: string) {
+        const team = await Team.findOne({
+            ...activeTeamFilter,
+            $or: [{ leaderId: studentId }, { memberIds: studentId }],
+        })
+            .populate("leaderId", "name email role")
+            .populate("memberIds", "name email role")
+            .lean();
+
+        return team;
+    }
+
+    async getAvailableMembers(studentId: string, teamId: string) {
+        if (!mongoose.isValidObjectId(teamId)) fail("Invalid team id", 400, ERROR_CODES.VALIDATION_ERROR);
+
+        const team = await Team.findById(teamId).lean();
+        if (!team) fail("Team not found", 404, ERROR_CODES.NOT_FOUND);
+        if (team.leaderId.toString() !== studentId) fail("Only the team leader can manage members", 403, ERROR_CODES.FORBIDDEN);
+        if (team.status !== "FORMING") fail("Only a forming team can add members", 400, ERROR_CODES.VALIDATION_ERROR);
+
+        const totalSize = 1 + team.memberIds.length;
+        if (totalSize >= MAX_TEAM_SIZE) return [];
+
+        const activeTeams = await Team.find({
+            ...activeTeamFilter,
+            $or: [{ leaderId: { $exists: true } }, { memberIds: { $exists: true } }],
+        }).select("leaderId memberIds").lean();
+
+        const unavailableIds = new Set<string>([
+            studentId,
+            ...team.memberIds.map((id) => id.toString()),
+            ...activeTeams.flatMap((item) => [item.leaderId.toString(), ...item.memberIds.map((id) => id.toString())]),
+        ]);
+
+        const pendingRequests = await TeamRequest.find({ teamId: team._id, status: "PENDING" }).select("requestedStudentId").lean();
+        pendingRequests.forEach((request) => unavailableIds.add(request.requestedStudentId.toString()));
+
+        const users = await User.find({
+            role: "student",
+            _id: { $nin: [...unavailableIds] },
+        }).select("name email role branch section class").lean();
+
+        const leader = await User.findById(studentId).select("name email role branch section class").lean() as UserWithClass | null;
+        if (!leader) fail("Student not found", 404, ERROR_CODES.STUDENT_NOT_FOUND);
+
+        return (users as UserWithClass[]).filter((student) => {
+            try {
+                validateSameClass(leader, student);
+                return true;
+            } catch {
+                return false;
+            }
+        });
+    }
+
+    async getTeam(studentId: string, teamId: string) {
+        if (!mongoose.isValidObjectId(teamId)) fail("Invalid team id", 400, ERROR_CODES.VALIDATION_ERROR);
+
+        const team = await Team.findById(teamId)
+            .populate("leaderId", "name email role")
+            .populate("memberIds", "name email role")
+            .lean();
+
+        if (!team) fail("Team not found", 404, ERROR_CODES.NOT_FOUND);
+
+        const isParticipant = team.leaderId._id?.toString?.() === studentId ||
+            team.memberIds.some((member: { _id: mongoose.Types.ObjectId }) => member._id.toString() === studentId);
+        if (!isParticipant) fail("You are not a member of this team", 403, ERROR_CODES.FORBIDDEN);
+
+        return team;
+    }
+
+    async completeTeam(studentId: string, teamId: string) {
+        if (!mongoose.isValidObjectId(teamId)) fail("Invalid team id", 400, ERROR_CODES.VALIDATION_ERROR);
+
+        const team = await Team.findById(teamId);
+        if (!team) fail("Team not found", 404, ERROR_CODES.NOT_FOUND);
+        if (team.leaderId.toString() !== studentId) fail("Only the team leader can complete the team", 403, ERROR_CODES.FORBIDDEN);
+        if (team.status !== "FORMING") fail("Only a forming team can be completed", 400, ERROR_CODES.VALIDATION_ERROR);
+
+        const totalSize = 1 + team.memberIds.length;
+        if (totalSize < MIN_TEAM_SIZE) fail("A team must contain at least 2 students", 400, ERROR_CODES.VALIDATION_ERROR);
+        if (totalSize > MAX_TEAM_SIZE || team.memberIds.length > MAX_ADDITIONAL_MEMBERS) {
+            fail("A team can contain a maximum of 4 students", 400, ERROR_CODES.VALIDATION_ERROR);
+        }
+
+        const pendingRequest = await TeamRequest.exists({ teamId: team._id, status: "PENDING" });
+        if (pendingRequest) fail("Resolve all pending team requests before completing the team", 400, ERROR_CODES.VALIDATION_ERROR);
+
+        team.status = "COMPLETED";
+        await team.save();
+
+        return team.toObject();
+    }
 }
-export = new TeamService();
+
+export default new TeamService();
