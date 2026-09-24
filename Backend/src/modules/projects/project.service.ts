@@ -1,202 +1,197 @@
 import mongoose from "mongoose";
 import projectModel from "./project.model";
-import userModel from "../users/user.model";
 import { AppError } from "../../errors/AppError";
 import { ERROR_CODES } from "../../errors/errorCodes";
-import { ProjectSource, ProjectVisibilityStatus } from "./project.type";
+import userModel from "../users/user.model";
 
-const teacherFields = "name email phoneNo";
-
-const assertObjectId = (value: string, message: string): mongoose.Types.ObjectId => {
-    if (!mongoose.isValidObjectId(value)) {
-        throw new AppError(message, 400, ERROR_CODES.VALIDATION_ERROR);
-    }
-    return new mongoose.Types.ObjectId(value);
+const fail = (message: string, status: number, code: string): never => {
+    throw new AppError(message, status, code);
 };
 
 class ProjectService {
     async createProject(
         userId: string,
-        role: string,
+        role: string | undefined,
         data: {
-            title: string;
-            description: string;
-            domain: string;
+            title?: string;
+            domain?: string;
+            problemStatement?: string;
+            description?: string;
+            expectedOutcome?: string;
             sdgGoals?: string[];
             technologyStack?: string[];
-            expectedOutcome?: string;
-            source: "FACULTY_PROJECT" | "PROJECT_BANK";
+            source?: "FACULTY_PROJECT" | "PROJECT_BANK";
             maxTeamSize?: number;
+            facultyId?: string;
         }
     ) {
-        const { title, description, domain, source } = data;
-
-        if (!title?.trim() || !description?.trim() || !domain?.trim()) {
-            throw new AppError("Title, description and domain are required", 400, ERROR_CODES.VALIDATION_ERROR);
+        const source = data.source;
+        if (!source || (source !== "FACULTY_PROJECT" && source !== "PROJECT_BANK")) {
+            fail("Only FACULTY_PROJECT or PROJECT_BANK can be created through this API", 400, ERROR_CODES.VALIDATION_ERROR);
         }
-
-        if (source !== "FACULTY_PROJECT" && source !== "PROJECT_BANK") {
-            throw new AppError("Invalid project source", 400, ERROR_CODES.VALIDATION_ERROR);
+        const title = data.title?.trim();
+        const domain = data.domain?.trim();
+        const description = data.description?.trim();
+        if (!title || !domain || !description) {
+            fail("Title, domain and description are required", 400, ERROR_CODES.VALIDATION_ERROR);
         }
-
         if (source === "FACULTY_PROJECT" && role !== "teacher") {
-            throw new AppError("Only teachers can create faculty projects", 403, ERROR_CODES.FORBIDDEN);
+            fail("Only faculty can create faculty projects", 403, ERROR_CODES.FORBIDDEN);
         }
-
         if (source === "PROJECT_BANK" && role !== "admin") {
-            throw new AppError("Only admins can create project bank projects", 403, ERROR_CODES.FORBIDDEN);
+            fail("Only admin can create project bank projects", 403, ERROR_CODES.FORBIDDEN);
         }
-
-        const maxTeamSize = data.maxTeamSize ?? 4;
-        if (!Number.isInteger(maxTeamSize) || maxTeamSize < 1 || maxTeamSize > 4) {
-            throw new AppError("Maximum team size must be between 1 and 4", 400, ERROR_CODES.VALIDATION_ERROR);
-        }
-
-        let facultyId: mongoose.Types.ObjectId | null = null;
-        if (source === "FACULTY_PROJECT") {
-            facultyId = assertObjectId(userId, "Invalid authenticated user ID");
+        let facultyId: string | null = source === "FACULTY_PROJECT" ? userId : null;
+        if (source === "PROJECT_BANK") {
+            const assignedFacultyId = data.facultyId;
+            if (!assignedFacultyId || !mongoose.isValidObjectId(assignedFacultyId)) {
+                fail("Project Bank projects require an assigned faculty approver", 400, ERROR_CODES.TEACHER_NOT_FOUND);
+            }
+            const faculty = await userModel.findOne({ _id: assignedFacultyId!, role: "teacher" });
+            if (!faculty) fail("Assigned faculty approver was not found", 404, ERROR_CODES.TEACHER_NOT_FOUND);
+            facultyId = assignedFacultyId!;
         }
 
         return projectModel.create({
-            title: title.trim(),
-            description: description.trim(),
-            domain: domain.trim(),
+            title: title!,
+            domain: domain!,
+            problemStatement: data.problemStatement?.trim() ?? "",
+            description: description!,
+            expectedOutcome: data.expectedOutcome?.trim() ?? "",
             sdgGoals: data.sdgGoals ?? [],
             technologyStack: data.technologyStack ?? [],
-            expectedOutcome: data.expectedOutcome ?? "",
-            source,
-            createdBy: assertObjectId(userId, "Invalid authenticated user ID"),
+            source: source!,
+            createdBy: userId,
             facultyId,
-            maxTeamSize,
+            maxTeamSize: data.maxTeamSize ?? 4,
             visibilityStatus: "AVAILABLE"
         });
     }
 
     async getAvailableProjects(source?: "FACULTY_PROJECT" | "PROJECT_BANK") {
-        const filter: Record<string, unknown> = { visibilityStatus: "AVAILABLE" };
+        const filter: { visibilityStatus: "AVAILABLE"; source?: "FACULTY_PROJECT" | "PROJECT_BANK" } = {
+            visibilityStatus: "AVAILABLE"
+        };
         if (source) filter.source = source;
-
         return projectModel.find(filter)
-            .populate("createdBy", teacherFields)
-            .populate("facultyId", teacherFields)
+            .populate("createdBy", "name email phoneNo")
+            .populate("facultyId", "name email phoneNo")
             .sort({ createdAt: -1 });
     }
 
-    async getProjectsForRole(role: string, source?: "FACULTY_PROJECT" | "PROJECT_BANK") {
-        if (role === "student") return this.getAvailableProjects(source);
-
-        const filter: Record<string, unknown> = {};
-        if (source) filter.source = source;
-        return projectModel.find(filter)
-            .populate("createdBy", teacherFields)
-            .populate("facultyId", teacherFields)
+    async getProjects(userRole: string | undefined) {
+        if (userRole === "student") return this.getAvailableProjects();
+        return projectModel.find()
+            .populate("createdBy", "name email phoneNo")
+            .populate("facultyId", "name email phoneNo")
             .sort({ createdAt: -1 });
     }
 
-    async getProjectById(projectId: string, role: string) {
+    async getProjectById(projectId: string, userRole: string | undefined) {
         if (!mongoose.isValidObjectId(projectId)) {
-            throw new AppError("Invalid project ID", 400, ERROR_CODES.VALIDATION_ERROR);
+            fail("Invalid project id", 400, ERROR_CODES.VALIDATION_ERROR);
         }
-
         const project = await projectModel.findById(projectId)
-            .populate("createdBy", teacherFields)
-            .populate("facultyId", teacherFields);
-
-        if (!project) throw new AppError("Project not found", 404, ERROR_CODES.PROJECT_NOT_FOUND);
-
-        if (role === "student" && project.visibilityStatus !== "AVAILABLE") {
-            throw new AppError("Project not found", 404, ERROR_CODES.PROJECT_NOT_FOUND);
+            .populate("createdBy", "name email phoneNo")
+            .populate("facultyId", "name email phoneNo");
+        if (!project) fail("Project not found", 404, ERROR_CODES.PROJECT_NOT_FOUND);
+        const validProject = project!;
+        if (userRole === "student" && validProject.visibilityStatus !== "AVAILABLE") {
+            fail("Project not found", 404, ERROR_CODES.PROJECT_NOT_FOUND);
         }
-
-        return project;
+        return validProject;
     }
 
-    async updateProject(
-        projectId: string,
-        userId: string,
-        role: string,
-        data: Partial<Pick<IProjectInput, "title" | "description" | "domain" | "sdgGoals" | "technologyStack" | "expectedOutcome" | "maxTeamSize" | "visibilityStatus">>
-    ) {
-        if (!mongoose.isValidObjectId(projectId)) {
-            throw new AppError("Invalid project ID", 400, ERROR_CODES.VALIDATION_ERROR);
-        }
-
+    async updateProject(projectId: string, userId: string, role: string | undefined, data: {
+        title?: string;
+        domain?: string;
+        problemStatement?: string;
+        description?: string;
+        expectedOutcome?: string;
+        sdgGoals?: string[];
+        technologyStack?: string[];
+        maxTeamSize?: number;
+    }) {
+        if (!mongoose.isValidObjectId(projectId)) fail("Invalid project id", 400, ERROR_CODES.VALIDATION_ERROR);
         const project = await projectModel.findById(projectId);
-        if (!project) throw new AppError("Project not found", 404, ERROR_CODES.PROJECT_NOT_FOUND);
-
-        const isOwner = project.createdBy.toString() === userId;
-        if (role !== "admin" && !isOwner) {
-            throw new AppError("You are not allowed to update this project", 403, ERROR_CODES.FORBIDDEN);
-        }
-
-        if (data.maxTeamSize !== undefined && (!Number.isInteger(data.maxTeamSize) || data.maxTeamSize < 1 || data.maxTeamSize > 4)) {
-            throw new AppError("Maximum team size must be between 1 and 4", 400, ERROR_CODES.VALIDATION_ERROR);
-        }
-
-        if (data.visibilityStatus === "RESERVED" || data.visibilityStatus === "ALLOCATED") {
-            throw new AppError("Workflow-managed project visibility cannot be set manually", 400, ERROR_CODES.VALIDATION_ERROR);
-        }
-
-        Object.assign(project, data);
-        return project.save();
+        if (!project) fail("Project not found", 404, ERROR_CODES.PROJECT_NOT_FOUND);
+        const validProject = project!;
+        const owner = validProject.createdBy.toString() === userId;
+        if (role !== "admin" && !owner) fail("You are not allowed to update this project", 403, ERROR_CODES.FORBIDDEN);
+        if (validProject.visibilityStatus === "ALLOCATED") fail("Allocated projects cannot be edited", 409, ERROR_CODES.PROJECT_ALREADY_ALLOCATED);
+        Object.assign(validProject, data);
+        return validProject.save();
     }
 
-    async hideProject(projectId: string, userId: string, role: string) {
-        return this.updateProject(projectId, userId, role, { visibilityStatus: "HIDDEN" });
+    async hideProject(projectId: string, userId: string, role: string | undefined) {
+        if (!mongoose.isValidObjectId(projectId)) fail("Invalid project id", 400, ERROR_CODES.VALIDATION_ERROR);
+        const project = await projectModel.findById(projectId);
+        if (!project) fail("Project not found", 404, ERROR_CODES.PROJECT_NOT_FOUND);
+        const validProject = project!;
+        if (role !== "admin" && validProject.createdBy.toString() !== userId) {
+            fail("You are not allowed to hide this project", 403, ERROR_CODES.FORBIDDEN);
+        }
+        if (validProject.visibilityStatus === "RESERVED" || validProject.visibilityStatus === "ALLOCATED") {
+            fail("Reserved or allocated projects cannot be hidden", 409, ERROR_CODES.PROJECT_NOT_AVAILABLE);
+        }
+        validProject.visibilityStatus = "HIDDEN";
+        return validProject.save();
     }
 
-    async reserveAvailableProject(projectId: string, source: ProjectSource) {
-        if (!mongoose.isValidObjectId(projectId)) {
-            throw new AppError("Invalid project ID", 400, ERROR_CODES.VALIDATION_ERROR);
-        }
-
+    async reserveProject(projectId: string, source: "FACULTY_PROJECT" | "PROJECT_BANK") {
+        if (!mongoose.isValidObjectId(projectId)) fail("Invalid project id", 400, ERROR_CODES.VALIDATION_ERROR);
         const project = await projectModel.findOneAndUpdate(
-            {
-                _id: projectId,
-                source,
-                visibilityStatus: "AVAILABLE"
-            },
+            { _id: projectId, source, visibilityStatus: "AVAILABLE" },
             { $set: { visibilityStatus: "RESERVED" } },
             { new: true }
         );
-
-        if (!project) {
-            throw new AppError("Project is no longer available", 409, ERROR_CODES.PROJECT_NOT_AVAILABLE);
-        }
-
-        return project;
+        if (!project) fail("Project is no longer available", 409, ERROR_CODES.PROJECT_NOT_AVAILABLE);
+        return project!;
     }
 
-    async releaseProject(projectId: mongoose.Types.ObjectId | null | undefined) {
-        if (!projectId) return;
-        await projectModel.findOneAndUpdate(
+    async releaseProject(projectId: mongoose.Types.ObjectId | string) {
+        await projectModel.updateOne(
             { _id: projectId, visibilityStatus: "RESERVED" },
             { $set: { visibilityStatus: "AVAILABLE" } }
         );
     }
 
-    async allocateProject(projectId: mongoose.Types.ObjectId | null | undefined) {
-        if (!projectId) return;
-        const updated = await projectModel.findOneAndUpdate(
+    async allocateProject(projectId: mongoose.Types.ObjectId | string) {
+        const project = await projectModel.findOneAndUpdate(
             { _id: projectId, visibilityStatus: "RESERVED" },
             { $set: { visibilityStatus: "ALLOCATED" } },
             { new: true }
         );
-        if (!updated) {
-            throw new AppError("Reserved project could not be allocated", 409, ERROR_CODES.ALLOCATION_FAILED);
-        }
+        if (!project) fail("Reserved project could not be allocated", 409, ERROR_CODES.PROJECT_NOT_AVAILABLE);
+        return project!;
+    }
+
+    async createOwnIdeaProject(data: {
+        title: string;
+        domain: string;
+        problemStatement: string;
+        description: string;
+        expectedOutcome?: string;
+        sdgGoals?: string[];
+        technologyStack?: string[];
+        createdBy: string;
+        mentorId: string;
+    }) {
+        return projectModel.create({
+            title: data.title,
+            domain: data.domain,
+            problemStatement: data.problemStatement,
+            description: data.description,
+            expectedOutcome: data.expectedOutcome ?? "",
+            sdgGoals: data.sdgGoals ?? [],
+            technologyStack: data.technologyStack ?? [],
+            source: "OWN_IDEA",
+            createdBy: data.createdBy,
+            facultyId: null,
+            maxTeamSize: 4,
+            visibilityStatus: "ALLOCATED"
+        });
     }
 }
-
-type IProjectInput = {
-    title: string;
-    description: string;
-    domain: string;
-    sdgGoals: string[];
-    technologyStack: string[];
-    expectedOutcome?: string;
-    maxTeamSize: number;
-    visibilityStatus: ProjectVisibilityStatus;
-};
 
 export = new ProjectService();

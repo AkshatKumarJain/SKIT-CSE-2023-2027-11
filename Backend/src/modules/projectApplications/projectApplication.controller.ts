@@ -3,116 +3,85 @@ import projectApplicationService from "./projectApplication.service";
 import { AppError } from "../../errors/AppError";
 import { ERROR_CODES } from "../../errors/errorCodes";
 
-const requireAuthUser = (req: Request) => {
-    if (!req.user?.userId || !req.user.role) {
-        throw new AppError("Authentication information is required", 401, ERROR_CODES.UNAUTHORIZED);
-    }
-    return req.user;
-};
-
-const requireParam = (req: Request, name: string): string => {
-    const value = req.params[name];
-    if (typeof value !== "string" || !value) {
-        throw new AppError(`${name} is required`, 400, ERROR_CODES.VALIDATION_ERROR);
-    }
-    return value;
+const user = (req: Request) => {
+    const userId = req.user?.userId;
+    if (!userId) throw new AppError("Authentication information is required", 401, ERROR_CODES.UNAUTHORIZED);
+    return userId;
 };
 
 const requireRole = (req: Request, role: "student" | "teacher" | "admin") => {
-    const user = requireAuthUser(req);
-    if (user.role !== role) {
-        throw new AppError("You are not authorized for this action", 403, ERROR_CODES.FORBIDDEN);
-    }
-    return user;
+    const userId = user(req);
+    if (req.user?.role !== role) throw new AppError(`Only ${role} users can perform this action`, 403, ERROR_CODES.FORBIDDEN);
+    return userId;
 };
 
 class ProjectApplicationController {
     async createOwnIdea(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "student");
-        const application = await projectApplicationService.createOwnIdeaApplication(user.userId, req.body);
-        return res.status(201).json({ data: application, message: "Own Idea application submitted successfully" });
+        const studentId = requireRole(req, "student");
+        const application = await projectApplicationService.createOwnIdeaApplication(studentId, req.body);
+        return res.status(201).json({ success: true, data: application, message: "Own Idea application submitted successfully" });
     }
 
     async applyForFacultyProject(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "student");
-        const application = await projectApplicationService.applyForFacultyProject(user.userId, req.body);
-        return res.status(201).json({ data: application, message: "Faculty project application submitted successfully" });
+        const studentId = requireRole(req, "student");
+        const application = await projectApplicationService.applyForFacultyProject(studentId, req.body);
+        return res.status(201).json({ success: true, data: application, message: "Faculty project application submitted successfully" });
     }
 
     async applyForProjectBank(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "student");
-        const application = await projectApplicationService.applyForProjectBank(user.userId, req.body);
-        return res.status(201).json({ data: application, message: "Project bank application submitted successfully" });
+        const studentId = requireRole(req, "student");
+        const application = await projectApplicationService.applyForProjectBank(studentId, req.body);
+        return res.status(201).json({ success: true, data: application, message: "Project Bank application submitted successfully" });
     }
 
     async getMyApplications(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "student");
-        const applications = await projectApplicationService.getStudentApplications(user.userId);
-        return res.status(200).json({ data: applications, message: "Applications fetched successfully" });
-    }
-
-    async getAvailableTeamMembers(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "student");
-        const members = await projectApplicationService.getAvailableTeamMembers(user.userId);
-        return res.status(200).json({ data: members, message: "Available team members fetched successfully" });
+        const studentId = requireRole(req, "student");
+        return res.json({ success: true, data: await projectApplicationService.getMyApplications(studentId) });
     }
 
     async getAvailableMentors(req: Request, res: Response): Promise<Response> {
         requireRole(req, "student");
-        const mentors = await projectApplicationService.getAvailableMentors();
-        return res.status(200).json({ data: mentors, message: "Available mentors fetched successfully" });
+        return res.json({ success: true, data: await projectApplicationService.getAvailableMentors() });
+    }
+
+    async getApplicationById(req: Request, res: Response): Promise<Response> {
+        const userId = user(req);
+        return res.json({ success: true, data: await projectApplicationService.getApplicationById(String(req.params.applicationId), userId, req.user?.role) });
     }
 
     async getAdminApplications(req: Request, res: Response): Promise<Response> {
         requireRole(req, "admin");
-        const applications = await projectApplicationService.getAdminApplications();
-        return res.status(200).json({ data: applications, message: "Admin applications fetched successfully" });
+        return res.json({ success: true, data: await projectApplicationService.getAvailableApplicationsForAdmin() });
     }
 
     async adminApproval(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "admin");
-        const { approved, comment } = req.body;
-        const application = await projectApplicationService.adminApproval(requireParam(req, "applicationId"), user.userId, approved, comment);
-        return res.status(200).json({ data: application, message: approved ? "Own Idea approved and sent to mentor" : "Application rejected by admin" });
+        const adminId = requireRole(req, "admin");
+        return res.json({ success: true, data: await projectApplicationService.adminApproval(String(req.params.applicationId), adminId, req.body) });
     }
 
-    async finalAdminApproval(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "admin");
-        const { approved, comment } = req.body;
-        const application = await projectApplicationService.finalAdminApproval(requireParam(req, "applicationId"), user.userId, approved, comment);
-        return res.status(200).json({ data: application, message: approved ? "Project finally approved" : "Application rejected by admin" });
-    }
-
-    async getMentorApplications(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "teacher");
-        const applications = await projectApplicationService.getMentorApplications(user.userId);
-        return res.status(200).json({ data: applications, message: "Mentor applications fetched successfully" });
+    async mentorApplications(req: Request, res: Response): Promise<Response> {
+        const mentorId = requireRole(req, "teacher");
+        return res.json({ success: true, data: await projectApplicationService.getMentorApplications(mentorId) });
     }
 
     async mentorApproval(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "teacher");
-        const { approved, comment } = req.body;
-        const application = await projectApplicationService.mentorApproval(requireParam(req, "applicationId"), user.userId, approved, comment);
-        return res.status(200).json({ data: application, message: approved ? "Mentor approval completed" : "Application rejected by mentor" });
+        const mentorId = requireRole(req, "teacher");
+        return res.json({ success: true, data: await projectApplicationService.mentorApproval(String(req.params.applicationId), mentorId, req.body) });
     }
 
-    async getFacultyApplications(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "teacher");
-        const applications = await projectApplicationService.getFacultyApplications(user.userId);
-        return res.status(200).json({ data: applications, message: "Faculty applications fetched successfully" });
+    async facultyApplications(req: Request, res: Response): Promise<Response> {
+        const facultyId = requireRole(req, "teacher");
+        return res.json({ success: true, data: await projectApplicationService.getFacultyApplications(facultyId) });
     }
 
     async facultyApproval(req: Request, res: Response): Promise<Response> {
-        const user = requireRole(req, "teacher");
-        const { approved, comment } = req.body;
-        const application = await projectApplicationService.facultyApproval(requireParam(req, "applicationId"), user.userId, approved, comment);
-        return res.status(200).json({ data: application, message: approved ? "Faculty approval completed" : "Application rejected by faculty" });
+        const facultyId = requireRole(req, "teacher");
+        return res.json({ success: true, data: await projectApplicationService.facultyApproval(String(req.params.applicationId), facultyId, req.body) });
     }
 
-    async getApplicationById(req: Request, res: Response): Promise<Response> {
-        const user = requireAuthUser(req);
-        const application = await projectApplicationService.getApplicationById(requireParam(req, "applicationId"), user.userId, user.role!);
-        return res.status(200).json({ data: application, message: "Application fetched successfully" });
+    async finalAdminApproval(req: Request, res: Response): Promise<Response> {
+        const adminId = requireRole(req, "admin");
+        return res.json({ success: true, data: await projectApplicationService.finalAdminApproval(String(req.params.applicationId), adminId, req.body) });
     }
 }
 
