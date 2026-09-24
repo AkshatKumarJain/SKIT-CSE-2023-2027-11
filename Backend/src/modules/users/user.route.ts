@@ -7,6 +7,7 @@ const requireAuth = authMiddleware({ required: true }) as RequestHandler;
 
 const router = express.Router();
 
+router.post("/register", userController.createUser);
 router.post("/login", userController.login);
 router.post("/logout", requireAuth, userController.logout);
 router.post("/refresh", requireAuth, userController.refresh);

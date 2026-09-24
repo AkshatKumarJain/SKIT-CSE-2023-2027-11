@@ -5,7 +5,6 @@ export interface ITeacher{
     designation: string;
     specialization: string[];
     skills: string[];
-    isMentor?: Boolean;
-    isLabFaculty?: Boolean;
-    isAdmin?: Boolean; 
+    isMentor: boolean;
+    isLabFaculty: boolean;
 }

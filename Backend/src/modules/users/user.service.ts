@@ -9,9 +9,91 @@ import { access } from "node:fs";
 import crypto from "crypto"
 import { redisClient } from "../../config/redis";
 import transporter from "../../config/nodemailer";
+import { createUserDTO } from "./user.type";
+import Student from "../students/student.model";
+import { IStudent } from "../students/student.type";
+import Teacher from "../teachers/teacher.model";
+import { ITeacher } from "../teachers/teacher.type"; 
 // import http from "http";
 
 class UserService {
+
+    async createUser(data: createUserDTO) {
+        const { name, email, password, role, department, semester, rollNumber, isTeamLeader, designation, specialization, skills, isMentor, isLabFaculty } = data;
+
+        // check if user already exists or not
+        const findUser = await userModel.findOne({ email: email });
+        if (findUser) {
+            throw new AppError("User Email already exists.", 403, ERROR_CODES.USER_ALREADY_EXISTS);
+        }
+
+        const createdUser = await userModel.create({
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            role: data.role ? data.role: undefined,
+            department: data.department,
+            // semester: data.semester ? data.semester: undefined
+        } as IUser);
+        if (!createdUser) {
+            throw new AppError("Cannot create User", 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
+        }
+        await createdUser.save();
+
+        if(createdUser.role==='student')
+        {
+            if(!semester || !rollNumber)
+            {
+                throw new AppError("All fields are required", 403, "")
+            }
+            const createdStudentProfile = await Student.create({userId: createdUser._id, rollNumber, semester, isTeamLeader: isTeamLeader ?? false});
+            // createdStudentProfile.semester = semester;
+
+            if(!createdStudentProfile)
+            {
+                throw new AppError("Could not create student profile.", 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
+            }
+            await createdStudentProfile.save();
+            console.log("student profile created");
+            return createdStudentProfile;
+        }
+
+        else if(createdUser.role==='teacher')
+        {
+            if(!designation)
+            {
+                throw new AppError("Designation is required", 403, ERROR_CODES.VALIDATION_ERROR);
+            }
+            const createdTeacherProfile = await Teacher.create({userId: createdUser._id, designation, specialization: specialization ?? [], skills: skills ?? [], isMentor: isMentor ?? false, isLabFaculty: isLabFaculty ?? false})
+            if(!createdTeacherProfile)
+            {
+                throw new AppError("Could not create teacher profile.", 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
+            }
+            await createdTeacherProfile.save();
+            console.log("teacher profile created");
+            return createdTeacherProfile;
+        }
+
+        // this.sendMail(email, username);
+
+        return createdUser;
+    }
+
+    // private async sendMail(email: string, username: string) {
+    //     // send email to registered email
+    //     const mailOptions = {
+    //         from: process.env.SENDER_EMAIL,
+    //         to: email,
+    //         subject: `Welcome ${username} to lms.`,
+    //         text: `Welcome to lms. Your account has been created with email id: ${email}.`
+    //     }
+
+    //     const mail = await transporter.sendMail(mailOptions);
+    //     if (!mail) {
+    //         console.log("couldn't send mail");
+    //     }
+    // }
+
     async login(email: string, password: string) {
         const findUser = await userModel.findOne({email: email});
         if(!findUser)

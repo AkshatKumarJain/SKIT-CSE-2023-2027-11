@@ -3,7 +3,7 @@ import {
     IProjectApplication,
     APPLICATION_SOURCES,
     APPLICATION_STATUSES
-} from "./projeectApplication.type";
+} from "./projectApplication.type";
 
 const projectApplicationSchema = new mongoose.Schema<IProjectApplication>(
     {
