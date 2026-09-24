@@ -3,3 +3,6 @@
 3. setup redis connection - completed
 4. setup nodemailer - completed
 5. create forgot-password, reset-password api - completed
+6. create student profile - completed
+7. create profile for teachers and admin - completed
+8. create update profile feature.
