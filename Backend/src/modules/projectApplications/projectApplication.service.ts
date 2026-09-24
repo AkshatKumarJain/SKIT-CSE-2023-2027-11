@@ -11,7 +11,7 @@ import {
     ApplicationSource,
     ApplicationStatus,
     ProjectDetails
-} from "./projeectApplication.type";
+} from "./projectApplication.type";
 
 type TeamReference = {
     _id: mongoose.Types.ObjectId;
