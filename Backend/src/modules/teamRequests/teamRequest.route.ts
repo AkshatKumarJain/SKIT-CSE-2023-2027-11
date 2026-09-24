@@ -1,0 +1,2 @@
+import express from "express"; import {authMiddleware} from "redis-jwt-auth"; import type {RequestHandler} from "express"; import c from "../teams/team.controller";
+const auth=authMiddleware({required:true}) as RequestHandler; const r=express.Router(); r.get("/my",auth,c.received); r.patch("/:requestId/accept",auth,c.accept); r.patch("/:requestId/reject",auth,c.reject); r.patch("/:requestId/cancel",auth,c.cancel); export default r;

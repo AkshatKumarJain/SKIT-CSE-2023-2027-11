@@ -1,10 +1,12 @@
 import { useState } from "react";
 import "./Login.css";
 import { loginUser } from "../../services/authService";
+import { getUserRole } from "../../services/auth";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
     const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -23,11 +25,26 @@ function Login() {
         setLoading(true);
 
         try {
-            const data = await loginUser(email, password);
+            await loginUser(email, password);
 
-            localStorage.setItem("accessToken", data.token.accessToken);
+            const role = getUserRole();
 
-            console.log("Login successful:", data);
+            console.log("Login successful. Role:", role);
+
+            if (!role) {
+                setError("User role not found.");
+                return;
+            }
+
+            if (role === "student") {
+                navigate("/student/dashboard");
+            } else if (role === "teacher") {
+                navigate("/teacher/dashboard");
+            } else if (role === "admin") {
+                navigate("/admin/dashboard");
+            } else {
+                setError("Invalid user role.");
+            }
         } catch (error) {
             setError(error.message);
         } finally {
@@ -46,32 +63,42 @@ function Login() {
                 />
 
                 <h1>Project Allocation & Tracking Portal</h1>
-                <p className="login-subtitle">Login to your account</p>
+
+                <p className="login-subtitle">
+                    Login to your account
+                </p>
 
                 <form onSubmit={handleLogin}>
 
                     <div className="form-group">
-                        <label htmlFor="email">College Email</label>
+                        <label htmlFor="email">
+                            College Email
+                        </label>
+
                         <input
                             type="email"
                             id="email"
                             placeholder="Enter your college email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            pattern="^[a-zA-Z0-9._%+-]+@skit\.ac\.in$"
+                            pattern="^[a-zA-Z0-9._%+\-]+@skit\.ac\.in$"
                             title="Please use your SKIT college email"
                             required
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">Password</label>
+                        <label htmlFor="password">
+                            Password
+                        </label>
+
                         <input
                             type="password"
                             id="password"
                             placeholder="Enter your password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            autoComplete="current-password"
                             required
                         />
                     </div>
@@ -86,7 +113,9 @@ function Login() {
                     </div>
 
                     {error && (
-                        <p className="login-error">{error}</p>
+                        <p className="login-error">
+                            {error}
+                        </p>
                     )}
 
                     <button
