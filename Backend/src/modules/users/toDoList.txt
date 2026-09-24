@@ -1,2 +1,5 @@
 1. create a error handler - completed
 2. create login and logout features for users - completed
+3. setup redis connection - completed
+4. setup nodemailer - completed
+5. create forgot-password, reset-password api - completed

@@ -7,8 +7,10 @@ const requireAuth = authMiddleware({ required: true }) as RequestHandler;
 
 const router = express.Router();
 
-router.get("/login", userController.login);
+router.post("/login", userController.login);
 router.post("/logout", requireAuth, userController.logout);
 router.post("/refresh", requireAuth, userController.refresh);
+router.post("/forgot-password", userController.forgotPassword);
+router.post("/reset-password", userController.resetPassword);
 
 export default router;
