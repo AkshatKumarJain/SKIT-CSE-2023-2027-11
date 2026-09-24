@@ -1,16 +1,10 @@
 import express from "express";
-import "dotenv/config";
+import "dotenv/config"
 import cors from "cors";
 import { connectDB } from "./config/db";
 import { errorHandler } from "./middlewares/errorHandler";
 import userRouter from "./modules/users/user.route";
-
-import projectRoute from "./modules/projects/project.route";
-import projectApplicationRoute from "./modules/projectApplications/projectApplication.route";
-import projectSelectionRoute from "./modules/projectSelections/projectSelection.route";
-
-
-import { connectRedis, disconnectRedis } from "./config/redis";
+import {connectRedis, disconnectRedis} from "./config/redis";
 
 const app = express();
 app.use(cors({
@@ -31,9 +25,6 @@ app.get("/health", (req, res) => {
 const PORT = process.env.PORT || 8000;
 
 app.use("/api/user/", userRouter);
-app.use("/api/projects/", projectRoute);
-app.use("/api/project-applications/", projectApplicationRoute);
-app.use("/api/project-selection/", projectSelectionRoute);
 
 
 // last

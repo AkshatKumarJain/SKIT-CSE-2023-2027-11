@@ -59,20 +59,25 @@ function ProjectBank() {
   const [stage, setStage] = useState(null)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [domain, setDomain] = useState('')
   const [activeProject, setActiveProject] = useState(null)
 
   useEffect(() => {
     let isMounted = true
-    Promise.all([getProjectSelectionStage('project-bank'), getProjectBankItems()]).then(
-      ([stageData, itemData]) => {
+    Promise.all([getProjectSelectionStage('project-bank'), getProjectBankItems()])
+      .then(([stageData, itemData]) => {
         if (!isMounted) return
         setStage(stageData)
         setItems(itemData)
-        setLoading(false)
-      }
-    )
+      })
+      .catch((err) => {
+        if (isMounted) setError(err.message)
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false)
+      })
     return () => {
       isMounted = false
     }
@@ -86,7 +91,7 @@ function ProjectBank() {
     })
   }, [items, query, domain])
 
-  const availableCount = items.filter((item) => item.status === 'AVAILABLE').length
+  const availableCount = items.filter((item) => item.visibilityStatus === 'AVAILABLE').length
 
   function handleSelectProject(project) {
     navigate('/project-selection/student-idea', { state: { source: 'bank', project } })
@@ -99,6 +104,20 @@ function ProjectBank() {
           <h1 className="page-heading">Project Bank</h1>
         </div>
         <div className="loading-state">Loading project bank...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div>
+        <div className="page-header">
+          <h1 className="page-heading">Project Bank</h1>
+        </div>
+        <div className="empty-state">
+          <div className="empty-state-title">Could not load the project bank</div>
+          <p className="empty-state-text">{error}</p>
+        </div>
       </div>
     )
   }
@@ -122,7 +141,7 @@ function ProjectBank() {
             <h1 className="page-heading">Project Bank</h1>
             <p className="page-subtext">
               Pre-approved project topics you can pick from if you have not been allotted a
-              project yet.
+              project yet. Each project can be picked by one team only.
             </p>
           </div>
         </div>
@@ -139,7 +158,7 @@ function ProjectBank() {
             <div className="status-banner-stat-label">Available</div>
           </div>
           <div className="status-banner-stat">
-            <div className="status-banner-stat-value">26 Sep</div>
+            <div className="status-banner-stat-value">{stage?.endLabel || '-'}</div>
             <div className="status-banner-stat-label">Closes On</div>
           </div>
         </div>
@@ -173,24 +192,32 @@ function ProjectBank() {
 
       {filtered.length ? (
         <div className="bank-idea-grid">
-          {filtered.map((project) => (
-            <button
-              type="button"
-              key={project.id}
-              className="bank-idea-card"
-              onClick={() => setActiveProject(project)}
-            >
-              <div className="bank-idea-card-top">
-                <span className="bank-idea-card-domain">{project.domain}</span>
-                <StatusPill status={project.status} label={project.status === 'ALLOTTED' ? 'Allotted' : 'Available'} />
-              </div>
-              <div className="bank-idea-card-title">{project.title}</div>
-              <p className="bank-idea-card-description">{project.description}</p>
-              <div className="bank-idea-card-footer">
-                <span className="bank-idea-card-difficulty">{project.difficulty}</span>
-              </div>
-            </button>
-          ))}
+          {filtered.map((project) => {
+            const isReserved = project.visibilityStatus === 'RESERVED'
+            return (
+              <button
+                type="button"
+                key={project.id}
+                className="bank-idea-card"
+                onClick={() => setActiveProject(project)}
+              >
+                <div className="bank-idea-card-top">
+                  <span className="bank-idea-card-domain">{project.domain}</span>
+                  <StatusPill
+                    status={project.visibilityStatus}
+                    label={isReserved ? 'Reserved' : 'Available'}
+                  />
+                </div>
+                <div className="bank-idea-card-title">{project.title}</div>
+                <p className="bank-idea-card-description">{project.description}</p>
+                {project.sdgGoals?.length ? (
+                  <div className="bank-idea-card-footer">
+                    <span className="bank-idea-card-sdg">{project.sdgGoals[0]}</span>
+                  </div>
+                ) : null}
+              </button>
+            )
+          })}
         </div>
       ) : (
         <div className="empty-state">
@@ -206,23 +233,50 @@ function ProjectBank() {
         open={Boolean(activeProject)}
         onClose={() => setActiveProject(null)}
         title={activeProject?.title}
-        subtitle={activeProject ? `${activeProject.domain} · ${activeProject.difficulty}` : ''}
+        subtitle={activeProject ? activeProject.domain : ''}
       >
         {activeProject ? (
           <>
+            {activeProject.problemStatement ? (
+              <div className="detail-block">
+                <div className="detail-block-label">Problem Statement</div>
+                <p className="detail-block-text">{activeProject.problemStatement}</p>
+              </div>
+            ) : null}
+
             <div className="detail-block">
               <div className="detail-block-label">Description</div>
               <p className="detail-block-text">{activeProject.description}</p>
             </div>
 
-            <div className="detail-block">
-              <div className="detail-block-label">Technologies</div>
-              <div className="tech-tag-list">
-                {activeProject.technologies.map((tech) => (
-                  <span key={tech} className="tech-tag">{tech}</span>
-                ))}
+            {activeProject.expectedOutcome ? (
+              <div className="detail-block">
+                <div className="detail-block-label">Expected Outcome</div>
+                <p className="detail-block-text">{activeProject.expectedOutcome}</p>
               </div>
-            </div>
+            ) : null}
+
+            {activeProject.technologies.length ? (
+              <div className="detail-block">
+                <div className="detail-block-label">Technologies</div>
+                <div className="tech-tag-list">
+                  {activeProject.technologies.map((tech) => (
+                    <span key={tech} className="tech-tag">{tech}</span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProject.sdgGoals.length ? (
+              <div className="detail-block">
+                <div className="detail-block-label">Aligned SDG Goal</div>
+                <div className="tech-tag-list">
+                  {activeProject.sdgGoals.map((goal) => (
+                    <span key={goal} className="tech-tag">{goal}</span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="drawer-actions">
               <button type="button" className="btn btn-secondary" onClick={() => setActiveProject(null)}>
@@ -231,10 +285,10 @@ function ProjectBank() {
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={activeProject.status === 'ALLOTTED'}
+                disabled={activeProject.visibilityStatus === 'RESERVED'}
                 onClick={() => handleSelectProject(activeProject)}
               >
-                {activeProject.status === 'ALLOTTED' ? 'Not Available' : 'Select This Project'}
+                {activeProject.visibilityStatus === 'RESERVED' ? 'Already Picked' : 'Select This Project'}
               </button>
             </div>
           </>

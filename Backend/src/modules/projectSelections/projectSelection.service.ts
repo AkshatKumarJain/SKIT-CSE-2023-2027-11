@@ -1,92 +1,159 @@
-import mongoose from "mongoose";
-import projectSelectionModel from "./projectSelection.model";
-import { AppError } from "../../errors/AppError";
-import { ERROR_CODES } from "../../errors/errorCodes";
-import { SelectionPhase } from "./projectSelection.type";
+import projectSelectionModel
+    from "./projectSelection.model";
 
-const fail = (message: string, status: number, code: string): never => {
-    throw new AppError(message, status, code);
-};
+import { AppError }
+    from "../../errors/AppError";
+
+import { ERROR_CODES }
+    from "../../errors/errorCodes";
+
 
 class ProjectSelectionService {
-    private validateDates(startDate: string | Date | undefined, endDate: string | Date | undefined) {
-        const rawStart = startDate;
-        const rawEnd = endDate;
-        if (!rawStart || !rawEnd) fail("startDate and endDate are required", 400, ERROR_CODES.VALIDATION_ERROR);
-        const start = new Date(rawStart!);
-        const end = new Date(rawEnd!);
-        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) fail("Invalid selection dates", 400, ERROR_CODES.VALIDATION_ERROR);
-        if (start >= end) fail("End date must be after start date", 400, ERROR_CODES.VALIDATION_ERROR);
-        return { start, end };
-    }
 
-    private async ensureNoOverlap(phase: SelectionPhase, start: Date, end: Date, excludeId?: string) {
-        const filter: {
-            _id?: { $ne: string };
-            isActive: true;
-            startDate: { $lt: Date };
-            endDate: { $gt: Date };
-        } = {
-            isActive: true,
-            startDate: { $lt: end },
-            endDate: { $gt: start }
-        };
-        if (excludeId) {
-            if (!mongoose.isValidObjectId(excludeId)) fail("Invalid selection phase id", 400, ERROR_CODES.VALIDATION_ERROR);
-            filter._id = { $ne: excludeId };
+
+    // CREATE / SET PHASE
+
+    async createPhase(data: any) {
+
+        const existing =
+            await projectSelectionModel.findOne({
+                phase: data.phase
+            });
+
+
+        if (existing) {
+
+            throw new AppError(
+                "Selection phase already exists",
+                400,
+                ERROR_CODES.VALIDATION_ERROR
+            );
         }
-        const overlap = await projectSelectionModel.findOne(filter);
-        if (overlap && overlap.phase !== phase) fail("Selection phases cannot overlap", 409, ERROR_CODES.VALIDATION_ERROR);
+
+
+        if (
+            new Date(data.startDate) >=
+            new Date(data.endDate)
+        ) {
+
+            throw new AppError(
+                "End date must be after start date",
+                400,
+                ERROR_CODES.VALIDATION_ERROR
+            );
+        }
+
+
+        return await projectSelectionModel.create({
+            phase: data.phase,
+
+            startDate: data.startDate,
+
+            endDate: data.endDate,
+
+            isActive:
+                data.isActive ?? true
+        });
     }
 
-    async createPhase(data: { phase?: SelectionPhase; startDate?: string | Date; endDate?: string | Date; isActive?: boolean }) {
-        const phase = data.phase;
-        if (!phase) fail("phase is required", 400, ERROR_CODES.VALIDATION_ERROR);
-        const existing = await projectSelectionModel.findOne({ phase: phase! });
-        if (existing) fail("Selection phase already exists", 409, ERROR_CODES.VALIDATION_ERROR);
-        const { start, end } = this.validateDates(data.startDate, data.endDate);
-        const isActive = data.isActive ?? true;
-        if (isActive) await this.ensureNoOverlap(phase!, start, end);
-        return projectSelectionModel.create({ phase: phase!, startDate: start, endDate: end, isActive });
-    }
 
-    async isSelectionOpen(phase: SelectionPhase): Promise<boolean> {
-        const now = new Date();
-        return !!await projectSelectionModel.exists({ phase: phase!, isActive: true, startDate: { $lte: now }, endDate: { $gte: now } });
-    }
+    // CURRENT PHASE
 
     async getCurrentPhase() {
+
         const now = new Date();
-        const phases = await projectSelectionModel.find({ isActive: true, startDate: { $lte: now }, endDate: { $gte: now } }).sort({ startDate: 1 });
-        const current = phases[0];
+
+
+        const phase =
+            await projectSelectionModel.findOne({
+
+                isActive: true,
+
+                startDate: {
+                    $lte: now
+                },
+
+                endDate: {
+                    $gte: now
+                }
+
+            });
+
+
+        if (!phase) {
+
+            return {
+                currentPhase: null,
+
+                ownIdea: false,
+
+                facultyProjects: false,
+
+                projectBank: false
+            };
+        }
+
+
         return {
-            currentPhase: current?.phase ?? null,
-            ownIdea: current?.phase === "OWN_IDEA",
-            facultyProjects: current?.phase === "FACULTY_PROJECT",
-            projectBank: current?.phase === "PROJECT_BANK"
+
+            currentPhase: phase.phase,
+
+            ownIdea:
+                phase.phase === "OWN_IDEA",
+
+            facultyProjects:
+                phase.phase === "FACULTY_PROJECT",
+
+            projectBank:
+                phase.phase === "PROJECT_BANK"
         };
     }
 
+
+    // GET ALL PHASES
+
     async getAllPhases() {
-        return projectSelectionModel.find().sort({ startDate: 1 });
+
+        return await projectSelectionModel
+            .find()
+            .sort({
+                startDate: 1
+            });
     }
 
-    async updatePhase(phaseId: string, data: { startDate?: string | Date; endDate?: string | Date; isActive?: boolean }) {
-        if (!mongoose.isValidObjectId(phaseId)) fail("Invalid selection phase id", 400, ERROR_CODES.VALIDATION_ERROR);
-        const phase = await projectSelectionModel.findById(phaseId);
-        if (!phase) fail("Selection phase not found", 404, ERROR_CODES.NOT_FOUND);
-        const validPhase = phase!;
-        const start = data.startDate === undefined ? validPhase.startDate : new Date(data.startDate);
-        const end = data.endDate === undefined ? validPhase.endDate : new Date(data.endDate);
-        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) fail("Invalid selection dates", 400, ERROR_CODES.VALIDATION_ERROR);
-        if (start >= end) fail("End date must be after start date", 400, ERROR_CODES.VALIDATION_ERROR);
-        const isActive = data.isActive ?? validPhase.isActive;
-        if (isActive) await this.ensureNoOverlap(validPhase.phase, start, end, phaseId);
-        validPhase.startDate = start;
-        validPhase.endDate = end;
-        validPhase.isActive = isActive;
-        return validPhase.save();
+
+    // UPDATE PHASE
+
+    async updatePhase(
+        phaseId: string,
+        data: any
+    ) {
+
+        const phase =
+            await projectSelectionModel
+                .findByIdAndUpdate(
+                    phaseId,
+                    data,
+                    {
+                        new: true,
+                        runValidators: true
+                    }
+                );
+
+
+        if (!phase) {
+
+            throw new AppError(
+                "Selection phase not found",
+                404,
+                ERROR_CODES.NOT_FOUND
+            );
+        }
+
+
+        return phase;
     }
 }
+
 
 export = new ProjectSelectionService();

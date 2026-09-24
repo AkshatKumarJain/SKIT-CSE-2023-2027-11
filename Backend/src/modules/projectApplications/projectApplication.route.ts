@@ -1,27 +1,72 @@
 import express from "express";
-import type { RequestHandler } from "express";
-import { authMiddleware } from "redis-jwt-auth";
-import projectApplicationController from "./projectApplication.controller";
 
-const requireAuth = authMiddleware({ required: true }) as RequestHandler;
+import projectApplicationController
+    from "./projectApplication.controller";
+
+import {
+    authMiddleware
+} from "redis-jwt-auth";
+
+import type {
+    RequestHandler
+} from "express";
+
+
 const router = express.Router();
 
-router.post("/own-idea", requireAuth, projectApplicationController.createOwnIdea);
-router.post("/faculty-project", requireAuth, projectApplicationController.applyForFacultyProject);
-router.post("/project-bank", requireAuth, projectApplicationController.applyForProjectBank);
-router.get("/my", requireAuth, projectApplicationController.getMyApplications);
-router.get("/available-mentors", requireAuth, projectApplicationController.getAvailableMentors);
 
-router.get("/admin", requireAuth, projectApplicationController.getAdminApplications);
-router.patch("/:applicationId/admin-approval", requireAuth, projectApplicationController.adminApproval);
-router.patch("/:applicationId/final-admin-approval", requireAuth, projectApplicationController.finalAdminApproval);
+const requireAuth =
+    authMiddleware({
+        required: true
+    }) as RequestHandler;
 
-router.get("/mentor", requireAuth, projectApplicationController.mentorApplications);
-router.patch("/:applicationId/mentor-approval", requireAuth, projectApplicationController.mentorApproval);
 
-router.get("/faculty", requireAuth, projectApplicationController.facultyApplications);
-router.patch("/:applicationId/faculty-approval", requireAuth, projectApplicationController.facultyApproval);
+// OWN IDEA
 
-router.get("/:applicationId", requireAuth, projectApplicationController.getApplicationById);
+router.post(
+    "/own-idea",
+    requireAuth,
+    projectApplicationController.submitOwnIdea
+);
+
+
+// FACULTY PROJECT
+
+router.post(
+    "/faculty-project",
+    requireAuth,
+    projectApplicationController.applyFacultyProject
+);
+
+
+// PROJECT BANK
+
+
+router.post(
+    "/project-bank",
+    requireAuth,
+    projectApplicationController.applyProjectBank
+);
+
+
+// MY APPLICATIONS
+
+router.get(
+    "/my",
+    requireAuth,
+    projectApplicationController.getMyApplications
+);
+
+
+
+// APPLICATION DETAILS
+
+
+router.get(
+    "/:applicationId",
+    requireAuth,
+    projectApplicationController.getApplicationById
+);
+
 
 export default router;

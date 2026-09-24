@@ -135,8 +135,8 @@
   width: 100%;
 }
 
-.bank-idea-card-difficulty {
-  font-size: 11.5px;
+.bank-idea-card-sdg {
+  font-size: 11px;
   font-weight: 600;
   color: var(--color-text-secondary);
 }

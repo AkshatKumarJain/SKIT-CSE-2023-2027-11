@@ -1,39 +1,113 @@
-import { Request, Response } from "express";
-import projectSelectionService from "./projectSelection.service";
-import { AppError } from "../../errors/AppError";
-import { ERROR_CODES } from "../../errors/errorCodes";
+import {
+    Request,
+    Response
+} from "express";
 
-const requireAdmin = (req: Request) => {
-    const userId = req.user?.userId;
-    if (!userId) throw new AppError("Authentication information is required", 401, ERROR_CODES.UNAUTHORIZED);
-    if (req.user?.role !== "admin") throw new AppError("Only admin can manage selection periods", 403, ERROR_CODES.FORBIDDEN);
-    return userId;
-};
+import projectSelectionService
+    from "./projectSelection.service";
 
-const requireAuth = (req: Request) => {
-    if (!req.user?.userId) throw new AppError("Authentication information is required", 401, ERROR_CODES.UNAUTHORIZED);
-};
 
 class ProjectSelectionController {
-    async createPhase(req: Request, res: Response): Promise<Response> {
-        requireAdmin(req);
-        return res.status(201).json({ success: true, data: await projectSelectionService.createPhase(req.body) });
+
+
+    // CREATE PHASE
+
+    async createPhase(
+        req: Request,
+        res: Response
+    ): Promise<Response> {
+
+        const phase =
+            await projectSelectionService
+                .createPhase(req.body);
+
+
+        return res.status(201).json({
+
+            message:
+                "Project selection phase created successfully",
+
+            data: phase
+
+        });
     }
 
-    async getCurrentPhase(req: Request, res: Response): Promise<Response> {
-        requireAuth(req);
-        return res.json({ success: true, data: await projectSelectionService.getCurrentPhase() });
+
+    // CURRENT PHASE
+
+    async getCurrentPhase(
+        req: Request,
+        res: Response
+    ): Promise<Response> {
+
+        const phase =
+            await projectSelectionService
+                .getCurrentPhase();
+
+
+        return res.status(200).json({
+
+            message:
+                "Current project selection phase fetched",
+
+            data: phase
+
+        });
     }
 
-    async getAllPhases(req: Request, res: Response): Promise<Response> {
-        requireAuth(req);
-        return res.json({ success: true, data: await projectSelectionService.getAllPhases() });
+
+    // ALL PHASES
+
+    async getAllPhases(
+        req: Request,
+        res: Response
+    ): Promise<Response> {
+
+        const phases =
+            await projectSelectionService
+                .getAllPhases();
+
+
+        return res.status(200).json({
+
+            message:
+                "Selection phases fetched successfully",
+
+            data: phases
+
+        });
     }
 
-    async updatePhase(req: Request, res: Response): Promise<Response> {
-        requireAdmin(req);
-        return res.json({ success: true, data: await projectSelectionService.updatePhase(String(req.params.phaseId), req.body) });
+
+    // UPDATE PHASE
+
+    async updatePhase(
+        req: Request,
+        res: Response
+    ): Promise<Response> {
+
+        const { phaseId } =
+            req.params;
+
+
+        const phase =
+            await projectSelectionService
+                .updatePhase(
+                    phaseId,
+                    req.body
+                );
+
+
+        return res.status(200).json({
+
+            message:
+                "Selection phase updated successfully",
+
+            data: phase
+
+        });
     }
 }
+
 
 export = new ProjectSelectionController();
