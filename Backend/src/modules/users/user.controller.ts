@@ -102,6 +102,38 @@ class UserController {
             message: "Password has been changed successfully"
         });
     }
+
+    async updateUserProfile(req: Request, res: Response): Promise<Response> {
+        const userId = req.user!.userId;
+        if(!userId)
+        {
+            throw new AppError("Empty token", 400, ERROR_CODES.INVALID_TOKEN);
+        }
+
+        const name = req.body?.name;
+        const file = req?.file
+
+        
+        console.log("req.body:", req.body);
+        console.log("req.file:", req.file);
+        
+        if (!name && !req.file) {
+          return res.status(200).json({
+            message: "Nothing to update"
+          });
+        }
+
+        const updateProfile = await userService.updateUserProfile({ userId, name, file });
+        if(!updateProfile)
+        {
+            throw new AppError("Couldn't update profile", 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
+        }
+        return res.status(201).json({
+            message: "User Profile updated successfully",
+            data: updateProfile
+        })
+        
+    }
 }
 
 export = new UserController();

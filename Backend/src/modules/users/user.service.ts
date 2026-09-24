@@ -15,6 +15,8 @@ import { IStudent } from "../students/student.type";
 import Teacher from "../teachers/teacher.model";
 import { ITeacher } from "../teachers/teacher.type"; 
 // import http from "http";
+import { uploadOnCloudinary } from "../../config/cloudinary";
+import { IUpdateProfile } from "./user.type";
 
 class UserService {
 
@@ -225,6 +227,52 @@ class UserService {
         //     message: "Password reset successful. Please login again.",
         // };
         return true;
+    }
+
+    async updateUserProfile({userId, name, file}: IUpdateProfile) {
+        const updatedData: any = {};
+        if(name) updatedData.name = name;
+        
+        if(file)
+        {
+            const image = await this.uploadImage(file);
+            console.log("CLOUDINARY URL RECEIVED ", image.url);
+            updatedData.profilePhotoUrl = image.url;
+            updatedData.profilePhotoPublicId = image.publicId;
+        }
+
+        console.log("updated object ", updatedData);
+
+
+        const updatedUserProfile = await userModel.findByIdAndUpdate(userId, 
+            {$set: updatedData},
+            {new: true}
+        );
+
+        if(!updatedUserProfile)
+        {
+            throw new AppError("User not found", 400, ERROR_CODES.USER_NOT_FOUND);
+        }
+        return updatedUserProfile;
+    }    
+
+    async uploadImage(file: Express.Multer.File) {
+        if(!file)
+        {
+            throw new AppError("File not provided", 403, ERROR_CODES.VALIDATION_ERROR);
+        }
+        const localFilePath = file.path;
+        const cloudinaryResponse = await uploadOnCloudinary(localFilePath);
+
+        if(!cloudinaryResponse)
+        {
+            throw new AppError("Cloudinary upload failed", 400, ERROR_CODES.FILE_UPLOAD_FAILED);
+        }
+
+        return {
+            url: cloudinaryResponse.secure_url,
+            publicId: cloudinaryResponse.public_id
+        }
     }
 }
 

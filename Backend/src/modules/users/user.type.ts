@@ -33,4 +33,10 @@ export interface createUserDTO{
     isLabFaculty?: boolean;
 }
 
+export interface IUpdateProfile{
+    userId: string,
+    name?: string,
+    file?: Express.Multer.File | undefined
+}
+
 export type UserDocument = HydratedDocument<IUser>;
