@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 import { logoutUser } from "../../services/authService";
 
 function Profile() {
+    const navigate = useNavigate();
+
     // Temporary data for frontend development.
     // Later this will come from the backend.
     const [profile, setProfile] = useState({
@@ -66,6 +69,7 @@ function Profile() {
             await logoutUser();
 
             console.log("Logout successful");
+            navigate("/login");
         } catch (error) {
             console.error("Logout failed:", error);
         }

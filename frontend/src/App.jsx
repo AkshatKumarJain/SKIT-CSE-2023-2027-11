@@ -12,6 +12,7 @@ import Profile from "./pages/Profile/Profile";
 
 import StudentDashboard from "./pages/StudentDashboard/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard/TeacherDashboard";
+import TeacherProjectProposal from "./pages/TeacherProjectProposal/TeacherProjectProposal";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
 
 function AppContent() {
@@ -67,6 +68,11 @@ function AppContent() {
           <Route
             index
             element={<TeacherDashboard />}
+          />
+
+          <Route
+            path="project-proposals"
+            element={<TeacherProjectProposal />}
           />
         </Route>
 
