@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./Login.css";
 import { loginUser } from "../../services/authService";
 import { getUserRole } from "../../services/auth";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 function Login() {
     const navigate = useNavigate();
@@ -11,6 +11,20 @@ function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const role = getUserRole();
+
+    if (role === "student") {
+        return <Navigate to="/student/dashboard" replace />;
+    }
+
+    if (role === "teacher") {
+        return <Navigate to="/teacher/dashboard" replace />;
+    }
+
+    if (role === "admin") {
+        return <Navigate to="/admin/dashboard" replace />;
+    }
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -83,6 +97,7 @@ function Login() {
                             onChange={(e) => setEmail(e.target.value)}
                             pattern="^[a-zA-Z0-9._%+\-]+@skit\.ac\.in$"
                             title="Please use your SKIT college email"
+                            autoComplete="username"
                             required
                         />
                     </div>
