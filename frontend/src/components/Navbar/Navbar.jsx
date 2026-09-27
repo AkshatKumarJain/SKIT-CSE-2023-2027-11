@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./Navbar.css";
 import skitLogo from "../../assets/skit-logo.jpg";
 import { useNavigate } from "react-router-dom";
+import { logoutUser } from "../../services/authService";
 
 function Navbar({ isLoggedIn = false, name = "", profileImage = "" }) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -72,6 +73,15 @@ function Navbar({ isLoggedIn = false, name = "", profileImage = "" }) {
               <button
                 type="button"
                 className="profile-menu-item"
+                onClick={async () => {
+                  try {
+                    await logoutUser();
+                    setIsProfileMenuOpen(false);
+                    navigate("/login");
+                  } catch (error) {
+                    console.error("Logout failed:", error);
+                  }
+                }}
               >
                 Logout
               </button>
