@@ -51,6 +51,40 @@ export async function loginUser(email, password) {
   return data;
 }
 
+export async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem("refreshToken");
+
+  if (!refreshToken) {
+    throw new Error("Refresh token not found.");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/user/refresh`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(refreshToken),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || "Token refresh failed");
+  }
+
+  const newAccessToken = data.newRefreshToken?.accessToken;
+  const newRefreshToken = data.newRefreshToken?.refreshToken;
+
+  if (!newAccessToken || !newRefreshToken) {
+    throw new Error("New tokens not received.");
+  }
+
+  localStorage.setItem("accessToken", newAccessToken);
+  localStorage.setItem("refreshToken", newRefreshToken);
+
+  return data;
+}
+
 export async function logoutUser() {
   const accessToken = localStorage.getItem("accessToken");
 
