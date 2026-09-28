@@ -1,0 +1,3 @@
+import mongoose from "mongoose"; import {ITeam,TEAM_STATUSES,MAX_ADDITIONAL_MEMBERS} from "./team.type";
+const schema=new mongoose.Schema<ITeam>({leaderId:{type:mongoose.Schema.Types.ObjectId,ref:"User",required:true,index:true},memberIds:{type:[{type:mongoose.Schema.Types.ObjectId,ref:"User"}],default:[],validate:{validator:(v:mongoose.Types.ObjectId[])=>v.length<=MAX_ADDITIONAL_MEMBERS,message:"Maximum 3 additional members allowed"}},status:{type:String,enum:TEAM_STATUSES,default:"FORMING",index:true}},{timestamps:true});
+schema.index({leaderId:1,status:1}); schema.index({memberIds:1,status:1}); export default mongoose.model<ITeam>("Team",schema);

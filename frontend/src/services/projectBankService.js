@@ -1,6 +1,8 @@
-import { mockRequest } from './api'
-import { projectBankItems } from '../data/mockData'
+import { apiFetch, ENDPOINTS } from './api'
+import { mapProject } from './mappers'
 
-export function getProjectBankItems() {
-  return mockRequest(projectBankItems)
+// GET /projects/bank - only projects with visibilityStatus AVAILABLE are returned
+export async function getProjectBankItems() {
+  const projects = await apiFetch(`${ENDPOINTS.projects}/bank`)
+  return projects.map(mapProject)
 }

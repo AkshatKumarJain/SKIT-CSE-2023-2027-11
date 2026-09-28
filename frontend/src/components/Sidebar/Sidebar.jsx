@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import "./Sidebar.css";
 
 function Sidebar({ role }) {
+  const navigate = useNavigate();
+
   const menuItems = {
     student: [
       "Dashboard",
@@ -10,8 +13,7 @@ function Sidebar({ role }) {
 
     teacher: [
       "Dashboard",
-      "My Projects",
-      "Project Requests",
+      "Project Proposals",
     ],
 
     admin: [
@@ -24,10 +26,24 @@ function Sidebar({ role }) {
 
   const items = menuItems[role] || [];
 
+  const handleNavigation = (item) => {
+    if (role === "teacher") {
+      if (item === "Dashboard") {
+        navigate("/teacher/dashboard");
+      }
+
+      if (item === "Project Proposals") {
+        navigate("/teacher/dashboard/project-proposals");
+      }
+    }
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-content">
-        <h2>{role?.charAt(0).toUpperCase() + role?.slice(1)}</h2>
+        <h2>
+          {role?.charAt(0).toUpperCase() + role?.slice(1)}
+        </h2>
 
         <nav className="sidebar-nav">
           {items.map((item) => (
@@ -35,6 +51,7 @@ function Sidebar({ role }) {
               type="button"
               className="sidebar-item"
               key={item}
+              onClick={() => handleNavigation(item)}
             >
               {item}
             </button>
