@@ -1,14 +1,10 @@
 import "express";
+import type { JwtPayload } from "redis-jwt-auth";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        userId: string;
-        role?: string;
-        iat?: number;
-        exp?: number;
-      };
+      user?: JwtPayload;
     }
   }
 }
