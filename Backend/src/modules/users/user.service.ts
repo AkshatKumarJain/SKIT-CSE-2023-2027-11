@@ -229,9 +229,9 @@ class UserService {
         return true;
     }
 
-    async updateUserProfile({userId, name, file}: IUpdateProfile) {
+    async updateUserProfile({userId, phoneNumber, file}: IUpdateProfile) {
         const updatedData: any = {};
-        if(name) updatedData.name = name;
+        if(phoneNumber) updatedData.phoneNumber = phoneNumber;
         
         if(file)
         {
