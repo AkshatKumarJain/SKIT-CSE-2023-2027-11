@@ -79,7 +79,6 @@ input, select, textarea {
 
 .app-content {
   padding: 24px 28px 48px;
-  max-width: 1280px;
   width: 100%;
 }
 
@@ -158,6 +157,11 @@ input, select, textarea {
   width: 100%;
 }
 
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 11.5px;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -175,7 +179,8 @@ input, select, textarea {
   color: var(--color-success);
 }
 
-.status-pill.upcoming {
+.status-pill.upcoming,
+.status-pill.reserved {
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
 }
@@ -250,12 +255,6 @@ input, select, textarea {
   background: var(--color-bg);
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-md);
-}
-
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
 }
 
 .search-control {
@@ -463,6 +462,27 @@ input, select, textarea {
   border: 1px solid var(--color-border-soft);
   padding: 5px 10px;
   border-radius: var(--radius-sm);
+}
+
+.sdg-option {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.sdg-option:hover {
+  border-color: #C7D6F5;
+  background: var(--color-bg);
+}
+
+.sdg-option.selected {
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  border-color: #CFE0FB;
 }
 
 .detail-block {
@@ -784,10 +804,6 @@ input, select, textarea {
 }
 
 @media (max-width: 760px) {
-  .field-row {
-    grid-template-columns: 1fr;
-  }
-
   .filter-bar {
     flex-direction: column;
   }
@@ -809,4 +825,162 @@ input, select, textarea {
   .form-footer-actions {
     flex-direction: column;
   }
+}
+
+.section-heading-sm {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.results-count-inline {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.team-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.team-panel {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.team-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.team-candidate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.team-candidate-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+}
+
+.team-candidate-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-border-soft);
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.team-candidate-avatar.lead {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.team-candidate-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-candidate-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.team-candidate-meta {
+  font-size: 11.5px;
+  color: var(--color-text-secondary);
+  margin-top: 1px;
+}
+
+.team-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-roster-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.team-demo-block {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.team-demo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.team-demo-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.team-demo-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.team-confirmed-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid #C9E7D5;
+  border-radius: var(--radius-lg);
+  margin-top: 18px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .team-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-error {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  margin-bottom: 12px;
 }
