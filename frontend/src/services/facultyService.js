@@ -1,16 +1,27 @@
-import { apiFetch, ENDPOINTS } from './api'
-import { getAvailableMentors } from './applicationService'
-import { mapMentor, mapProject } from './mappers'
+import { apiFetch } from './api'
 
-// GET /projects/faculty - only projects with visibilityStatus AVAILABLE are returned
+function normalizeProject(project) {
+  const faculty = project.facultyId && typeof project.facultyId === 'object' ? project.facultyId : null
+  const creator = project.createdBy && typeof project.createdBy === 'object' ? project.createdBy : null
+  return {
+    ...project,
+    id: project._id,
+    facultyId: faculty?._id || project.facultyId || null,
+    faculty: faculty?.name || creator?.name || 'Faculty mentor',
+    facultyDetails: faculty || creator || null,
+    specificFunctionalities: project.specificFunctionalities || [],
+    sdgGoals: project.sdgGoals || [],
+    technologies: project.technologies || []
+  }
+}
+
 export async function getFacultyProjects() {
-  const projects = await apiFetch(`${ENDPOINTS.projects}/faculty`)
-  return projects.map(mapProject)
+  const projects = await apiFetch('/projects/faculty')
+  return projects.map(normalizeProject)
 }
 
-// Mentor list for the picker. Backed by GET /applications/available-mentors, which
-// already hides teachers who have reached the 3-application limit.
 export async function getFacultyMembers() {
-  const mentors = await getAvailableMentors()
-  return mentors.map(mapMentor)
+  return apiFetch('/project-applications/available-mentors')
 }
+
+export { normalizeProject }
