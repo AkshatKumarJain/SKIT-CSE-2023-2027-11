@@ -4,7 +4,10 @@ import { IStudent } from "./student.type";
 const studentProfile = new mongoose.Schema<IStudent>({
     userId: {
         type: mongoose.Types.ObjectId,
-        ref: 'userModel'
+        ref: 'userModel',
+        required: true,
+        unique: true,
+        indexed: true
     },
     rollNumber: {
         type: String,

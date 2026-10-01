@@ -4,11 +4,13 @@ import cors from "cors";
 import { connectDB } from "./config/db";
 import { errorHandler } from "./middlewares/errorHandler";
 import userRouter from "./modules/users/user.route";
-
-
+import studentRouter from "./modules/students/student.route"
+import teacherRouter from "./modules/teachers/teacher.route";
 import projectRoute from "./modules/projects/project.route";
 import projectApplicationRoute from "./modules/projectApplications/projectApplication.route";
 import projectSelectionRoute from "./modules/projectSelections/projectSelection.route";
+
+
 import teamRoute from "./modules/teams/team.route";
 import teamRequestRoute from "./modules/teamRequests/teamRequest.route";
 
@@ -38,6 +40,9 @@ app.use("/api/user/", userRouter);
 app.use("/api/projects/", projectRoute);
 app.use("/api/project-applications/", projectApplicationRoute);
 app.use("/api/project-selection/", projectSelectionRoute);
+app.use("/api/student/", studentRouter);
+app.use("/api/teacher/", teacherRouter);
+
 app.use("/api/teams/", teamRoute);
 app.use("/api/team-requests/", teamRequestRoute);
 
