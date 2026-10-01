@@ -44,15 +44,20 @@ function StageCard({ stage }) {
 function ProjectSelection() {
   const [stages, setStages] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     let isMounted = true
-    getProjectSelectionStages().then((data) => {
-      if (isMounted) {
-        setStages(data)
-        setLoading(false)
-      }
-    })
+    getProjectSelectionStages()
+      .then((data) => {
+        if (isMounted) setStages(data)
+      })
+      .catch((err) => {
+        if (isMounted) setError(err.message)
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false)
+      })
     return () => {
       isMounted = false
     }
@@ -69,7 +74,24 @@ function ProjectSelection() {
     )
   }
 
+  if (error) {
+    return (
+      <div>
+        <div className="page-header">
+          <h1 className="page-heading">Project Selection</h1>
+        </div>
+        <div className="empty-state">
+          <div className="empty-state-title">Could not load project selection stages</div>
+          <p className="empty-state-text">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
   const openCount = stages.filter((stage) => stage.status === 'OPEN').length
+  const lastStage = stages
+    .filter((stage) => stage.endDate)
+    .sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0]
 
   return (
     <div>
@@ -96,7 +118,7 @@ function ProjectSelection() {
             <div className="status-banner-stat-label">Stages Open</div>
           </div>
           <div className="status-banner-stat">
-            <div className="status-banner-stat-value">26 Sep</div>
+            <div className="status-banner-stat-value">{lastStage?.endLabel || '-'}</div>
             <div className="status-banner-stat-label">Final Deadline</div>
           </div>
         </div>

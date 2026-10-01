@@ -1,31 +1,170 @@
 import mongoose from "mongoose";
-import {
-    APPLICATION_SOURCES,
-    IProjectApplication,
-    APPLICATION_STATUSES,
-} from "./projectApplication.type";
+import { IProjectApplication } from "./projectApplication.type";
 
-const projectApplicationSchema = new mongoose.Schema<IProjectApplication>(
-    {
-        studentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-        teamId: { type: mongoose.Schema.Types.ObjectId, ref: "Team", required: true, index: true },
-        projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
-        source: { type: String, enum: APPLICATION_SOURCES, required: true, index: true },
-        mobileNumber: { type: String, trim: true },
-        projectDetails: { type: ProjectDetailsSchema, default: undefined },
-        mentorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
-        facultyId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-        status: { type: String, enum: APPLICATION_STATUSES, required: true, index: true },
-        rejectionReason: { type: String, trim: true, default: null },
-        approvalHistory: { type: [approvalHistorySchema], default: [] },
-        submittedAt: { type: Date, default: Date.now, required: true },
-        approvedAt: { type: Date, default: null }
-    },
-    { timestamps: true }
+const projectApplicationSchema =
+    new mongoose.Schema<IProjectApplication>(
+        {
+            studentId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                required: true
+            },
+
+            projectId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Project",
+                default: null
+            },
+
+            source: {
+                type: String,
+                enum: [
+                    "OWN_IDEA",
+                    "FACULTY_PROJECT",
+                    "PROJECT_BANK"
+                ],
+                required: true
+            },
+
+            mobileNumber: {
+                type: String,
+                required: true,
+                trim: true
+            },
+
+            projectDetails: {
+                title: {
+                    type: String
+                },
+
+                description: {
+                    type: String
+                },
+
+                domain: {
+                    type: String
+                },
+
+                sdgGoals: {
+                    type: [String],
+                    default: []
+                },
+
+                technologyStack: {
+                    type: [String],
+                    default: []
+                },
+
+                expectedOutcome: {
+                    type: String
+                }
+            },
+
+            teamMembers: [
+                {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "User"
+                }
+            ],
+
+            mentorId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                default: null
+            },
+
+            facultyId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                default: null
+            },
+
+            status: {
+                type: String,
+                enum: [
+                    "ADMIN_REVIEW",
+                    "ADMIN_APPROVED",
+                    "MENTOR_REVIEW",
+                    "MENTOR_APPROVED",
+                    "FACULTY_REVIEW",
+                    "FACULTY_APPROVED",
+                    "ADMIN_FINAL_REVIEW",
+                    "APPROVED",
+                    "REJECTED"
+                ],
+                required: true
+            },
+
+            rejectionReason: {
+                type: String,
+                default: null
+            },
+
+            approvalHistory: [
+                {
+                    stage: {
+                        type: String,
+                        required: true
+                    },
+
+                    action: {
+                        type: String,
+                        required: true
+                    },
+
+                    approvedBy: {
+                        type: mongoose.Schema.Types.ObjectId,
+                        ref: "User",
+                        required: true
+                    },
+
+                    comment: {
+                        type: String,
+                        default: ""
+                    },
+
+                    actedAt: {
+                        type: Date,
+                        default: Date.now
+                    }
+                }
+            ],
+
+            submittedAt: {
+                type: Date,
+                default: Date.now
+            },
+
+            approvedAt: {
+                type: Date,
+                default: null
+            }
+        },
+        {
+            timestamps: true
+        }
+    );
+
+
+// Useful indexes
+projectApplicationSchema.index({
+    studentId: 1
+});
+
+projectApplicationSchema.index({
+    projectId: 1
+});
+
+projectApplicationSchema.index({
+    status: 1
+});
+
+projectApplicationSchema.index({
+    mentorId: 1
+});
+
+
+export default mongoose.model<IProjectApplication>(
+    "ProjectApplication",
+    projectApplicationSchema
 );
-
-projectApplicationSchema.index({ teamId: 1, status: 1 });
-projectApplicationSchema.index({ mentorId: 1, status: 1 });
-projectApplicationSchema.index({ facultyId: 1, status: 1 });
-
-export default mongoose.model<IProjectApplication>("ProjectApplication", projectApplicationSchema);
