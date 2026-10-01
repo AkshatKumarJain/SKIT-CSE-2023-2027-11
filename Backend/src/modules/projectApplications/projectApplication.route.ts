@@ -1,72 +1,75 @@
 import express from "express";
+import type { RequestHandler } from "express";
+import { authMiddleware } from "redis-jwt-auth";
+import projectApplicationController from "./projectApplication.controller";
 
-import projectApplicationController
-    from "./projectApplication.controller";
-
-import {
-    authMiddleware
-} from "redis-jwt-auth";
-
-import type {
-    RequestHandler
-} from "express";
-
-
+const requireAuth = authMiddleware({ required: true }) as RequestHandler;
 const router = express.Router();
 
-
-const requireAuth =
-    authMiddleware({
-        required: true
-    }) as RequestHandler;
-
-
-// OWN IDEA
-
 router.post(
-    "/own-idea",
-    requireAuth,
-    projectApplicationController.submitOwnIdea
+  "/own-idea",
+  requireAuth,
+  projectApplicationController.createOwnIdea,
 );
-
-
-// FACULTY PROJECT
-
 router.post(
-    "/faculty-project",
-    requireAuth,
-    projectApplicationController.applyFacultyProject
+  "/faculty-project",
+  requireAuth,
+  projectApplicationController.applyForFacultyProject,
 );
-
-
-// PROJECT BANK
-
-
 router.post(
-    "/project-bank",
-    requireAuth,
-    projectApplicationController.applyProjectBank
+  "/project-bank",
+  requireAuth,
+  projectApplicationController.applyForProjectBank,
 );
-
-
-// MY APPLICATIONS
+router.get("/my", requireAuth, projectApplicationController.getMyApplications);
+router.get(
+  "/available-mentors",
+  requireAuth,
+  projectApplicationController.getAvailableMentors,
+);
 
 router.get(
-    "/my",
-    requireAuth,
-    projectApplicationController.getMyApplications
+  "/admin",
+  requireAuth,
+  projectApplicationController.getAdminApplications,
 );
-
-
-
-// APPLICATION DETAILS
-
+router.patch(
+  "/:applicationId/admin-approval",
+  requireAuth,
+  projectApplicationController.adminApproval,
+);
+router.patch(
+  "/:applicationId/final-admin-approval",
+  requireAuth,
+  projectApplicationController.finalAdminApproval,
+);
 
 router.get(
-    "/:applicationId",
-    requireAuth,
-    projectApplicationController.getApplicationById
+  "/mentor",
+  requireAuth,
+  projectApplicationController.mentorApplications,
+);
+router.patch(
+  "/:applicationId/mentor-approval",
+  requireAuth,
+  projectApplicationController.mentorApproval,
 );
 
+router.get(
+  "/faculty",
+  requireAuth,
+  projectApplicationController.facultyApplications,
+);
+router.patch(
+  "/:applicationId/faculty-approval",
+  requireAuth,
+  projectApplicationController.facultyApproval,
+);
+
+router.get(
+  "/:applicationId",
+  requireAuth,
+  projectApplicationController.getApplicationById,
+);
 
 export default router;
