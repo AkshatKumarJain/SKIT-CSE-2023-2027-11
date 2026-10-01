@@ -1,0 +1,268 @@
+.teacher-proposal-page {
+  padding: 32px;
+  background-color: #f8fafc;
+  min-height: 100%;
+}
+
+.teacher-proposal-header {
+  margin-bottom: 24px;
+}
+
+.teacher-proposal-header h1 {
+  margin: 0 0 8px;
+  color: #0f2554;
+  font-size: 28px;
+}
+
+.teacher-proposal-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.teacher-proposal-card {
+  max-width: 900px;
+  background-color: #ffffff;
+  padding: 28px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 37, 84, 0.06);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e293b;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #0f2554;
+  box-shadow: 0 0 0 2px rgba(15, 37, 84, 0.08);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* SDG selector */
+
+.sdg-selector {
+  position: relative;
+  width: 100%;
+}
+
+.sdg-selector-header {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sdg-selector-header:hover {
+  border-color: #94a3b8;
+}
+
+.sdg-dropdown-icon {
+  color: #0f2554;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.sdg-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(15, 37, 84, 0.12);
+  z-index: 10;
+}
+
+.sdg-dropdown-option {
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sdg-dropdown-option:hover {
+  background-color: #f1f5f9;
+  color: #0f2554;
+}
+
+.sdg-all-selected {
+  margin: 0;
+  padding: 12px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Selected SDG tags */
+
+.sdg-selected-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sdg-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 7px 10px;
+  background-color: #eef2f7;
+  border: 1px solid #d5dce5;
+  border-radius: 6px;
+  color: #0f2554;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sdg-tag span {
+  overflow-wrap: anywhere;
+}
+
+.sdg-tag button {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.sdg-tag button:hover {
+  color: #0f2554;
+}
+
+/* Message */
+
+.proposal-message {
+  margin: 4px 0 16px;
+  color: #0f2554;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Submit button */
+
+.proposal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.submit-proposal-btn {
+  border: none;
+  background-color: #0f2554;
+  color: #ffffff;
+  padding: 11px 22px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.submit-proposal-btn:hover {
+  background-color: #091a3d;
+}
+
+/* Tablet */
+
+@media (max-width: 768px) {
+  .teacher-proposal-page {
+    padding: 24px;
+  }
+
+  .teacher-proposal-card {
+    padding: 22px;
+  }
+
+  .sdg-dropdown {
+    max-height: 240px;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 480px) {
+  .teacher-proposal-page {
+    padding: 16px;
+  }
+
+  .teacher-proposal-header h1 {
+    font-size: 24px;
+  }
+
+  .teacher-proposal-header p {
+    font-size: 14px;
+  }
+
+  .teacher-proposal-card {
+    padding: 18px;
+  }
+
+  .sdg-tag {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .proposal-actions {
+    justify-content: stretch;
+  }
+
+  .submit-proposal-btn {
+    width: 100%;
+  }
+}

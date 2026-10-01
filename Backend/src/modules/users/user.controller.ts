@@ -44,6 +44,38 @@ class UserController {
             newRefreshToken: rotatedToken 
         });
     }
+
+    async forgotPassword(req: Request, res: Response): Promise<Response>{
+        const {email} = req.body;
+        if(!email)
+        {
+            throw new AppError("email is required", 400, ERROR_CODES.VALIDATION_ERROR)
+        }
+
+            await userService.forgotPassword(email);
+
+            return res.status(200).json({
+                message: "If this email exists, email will be sent."
+            })
+        }
+    
+    async resetPassword(req: Request, res: Response): Promise<Response>{
+        const {newPassword, email} = req.body;
+        if(!newPassword)
+            {
+                throw new AppError("new Password is required", 400, ERROR_CODES.VALIDATION_ERROR);
+            }
+        if(!email)
+        {
+            throw new AppError("email is required", 400, ERROR_CODES.VALIDATION_ERROR);
+        }
+        
+        await userService.resetPassword(newPassword, email);
+        
+        return res.status(201).json({
+            message: "Password has been changed successfully"
+        });
+    }
 }
 
 export = new UserController();
