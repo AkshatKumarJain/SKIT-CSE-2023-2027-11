@@ -11,12 +11,17 @@ import projectApplicationRoute from "./modules/projectApplications/projectApplic
 import projectSelectionRoute from "./modules/projectSelections/projectSelection.route";
 
 
+import teamRoute from "./modules/teams/team.route";
+import teamRequestRoute from "./modules/teamRequests/teamRequest.route";
+
 import { connectRedis, disconnectRedis } from "./config/redis";
 
 const app = express();
-app.use(cors({
-    origin: "http://localhost:5173"
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 app.use(express.json());
 
 connectRedis();
@@ -24,9 +29,9 @@ connectRedis();
 connectDB();
 
 app.get("/health", (req, res) => {
-    res.json({
-        message: "Server is running"
-    });
+  res.json({
+    message: "Server is running",
+  });
 });
 
 const PORT = process.env.PORT || 8000;
@@ -38,15 +43,17 @@ app.use("/api/project-selection/", projectSelectionRoute);
 app.use("/api/student/", studentRouter);
 app.use("/api/teacher/", teacherRouter);
 
+app.use("/api/teams/", teamRoute);
+app.use("/api/team-requests/", teamRequestRoute);
 
 // last
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
 
 process.on("SIGINT", async () => {
-    await disconnectRedis();
-    process.exit(1);
-})
+  await disconnectRedis();
+  process.exit(1);
+});
