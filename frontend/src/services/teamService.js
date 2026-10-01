@@ -1,14 +1,48 @@
-import { mockRequest } from './api'
-import { students, mockTeam } from '../data/mockData'
+import { apiFetch } from './api'
 
-// Team selection is still mocked.
-export function getStudents() {
-  return mockRequest(students)
+export function createTeam() {
+  return apiFetch('/teams', { method: 'POST' })
 }
 
-// The application endpoints need a teamId. Until the real team module is connected
-// this returns a mock team. Set VITE_MOCK_TEAM_ID to a real COMPLETED team's _id
-// (where the logged-in student is leader) to test submissions end to end.
 export function getMyTeam() {
-  return mockRequest(mockTeam)
+  return apiFetch('/teams/my')
+}
+
+export function getTeam(teamId) {
+  return apiFetch(`/teams/${teamId}`)
+}
+
+export function getAvailableMembers() {
+  return apiFetch('/teams/available-members')
+}
+
+export function sendTeamRequest(teamId, studentId) {
+  return apiFetch(`/teams/${teamId}/requests`, {
+    method: 'POST',
+    body: JSON.stringify({ studentId })
+  })
+}
+
+export function getTeamRequests(teamId) {
+  return apiFetch(`/teams/${teamId}/requests`)
+}
+
+export function getReceivedTeamRequests() {
+  return apiFetch('/team-requests/my')
+}
+
+export function acceptTeamRequest(requestId) {
+  return apiFetch(`/team-requests/${requestId}/accept`, { method: 'PATCH' })
+}
+
+export function rejectTeamRequest(requestId) {
+  return apiFetch(`/team-requests/${requestId}/reject`, { method: 'PATCH' })
+}
+
+export function cancelTeamRequest(requestId) {
+  return apiFetch(`/team-requests/${requestId}/cancel`, { method: 'PATCH' })
+}
+
+export function completeTeam(teamId) {
+  return apiFetch(`/teams/${teamId}/complete`, { method: 'PATCH' })
 }

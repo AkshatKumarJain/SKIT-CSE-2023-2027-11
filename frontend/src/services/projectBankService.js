@@ -1,8 +1,7 @@
-import { apiFetch, ENDPOINTS } from './api'
-import { mapProject } from './mappers'
+import { apiFetch } from './api'
+import { normalizeProject } from './facultyService'
 
-// GET /projects/bank - only projects with visibilityStatus AVAILABLE are returned
 export async function getProjectBankItems() {
-  const projects = await apiFetch(`${ENDPOINTS.projects}/bank`)
-  return projects.map(mapProject)
+  const projects = await apiFetch('/projects/bank')
+  return projects.map(normalizeProject)
 }
