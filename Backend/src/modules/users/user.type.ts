@@ -35,7 +35,7 @@ export interface createUserDTO{
 
 export interface IUpdateProfile{
     userId: string,
-    name?: string,
+    phoneNumber?: string,
     file?: Express.Multer.File | undefined
 }
 
