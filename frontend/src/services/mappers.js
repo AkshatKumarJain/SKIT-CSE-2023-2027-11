@@ -12,10 +12,12 @@ export function mapProject(project) {
 
   return {
     id: project._id,
+    _id: project._id,
     title: project.title,
     domain: project.domain,
     problemStatement: project.problemStatement || '',
-    description: project.description,
+    description: project.description || '',
+    specificFunctionalities: project.specificFunctionalities || [],
     expectedOutcome: project.expectedOutcome || '',
     technologies: project.technologyStack || [],
     sdgGoals: project.sdgGoals || [],
@@ -35,6 +37,7 @@ export function mapProject(project) {
 export function mapMentor(teacher) {
   return {
     id: teacher._id,
+    _id: teacher._id,
     name: teacher.name || '',
     email: teacher.email || '',
     phoneNo: teacher.phoneNo || '',

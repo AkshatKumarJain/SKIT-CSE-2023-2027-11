@@ -1,32 +1,36 @@
-import { apiFetch, ENDPOINTS } from './api'
+import { apiFetch } from './api'
 
-const base = ENDPOINTS.applications
-
-// POST body: { teamId, mentorId, mobileNumber?, projectDetails: {
-//   title, domain, problemStatement, description, expectedOutcome?, sdgGoals?, technologyStack? } }
 export function submitOwnIdea(payload) {
-  return apiFetch(`${base}/own-idea`, { method: 'POST', body: JSON.stringify(payload) })
+  return apiFetch('/project-applications/own-idea', { method: 'POST', body: JSON.stringify(payload) })
 }
 
-// POST body: { teamId, projectId, mentorId, mobileNumber? }
 export function applyFacultyProject(payload) {
-  return apiFetch(`${base}/faculty-project`, { method: 'POST', body: JSON.stringify(payload) })
+  return apiFetch('/project-applications/faculty-project', { method: 'POST', body: JSON.stringify(payload) })
 }
 
-// POST body: { teamId, projectId, mentorId, mobileNumber? }
 export function applyProjectBank(payload) {
-  return apiFetch(`${base}/project-bank`, { method: 'POST', body: JSON.stringify(payload) })
+  return apiFetch('/project-applications/project-bank', { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export function getMyApplications() {
-  return apiFetch(`${base}/my`)
+  return apiFetch('/project-applications/my')
 }
 
 export function getApplicationById(applicationId) {
-  return apiFetch(`${base}/${applicationId}`)
+  return apiFetch(`/project-applications/${applicationId}`)
 }
 
-// Teachers who still have mentor capacity (student-only route)
 export function getAvailableMentors() {
-  return apiFetch(`${base}/available-mentors`)
+  return apiFetch('/project-applications/available-mentors')
+}
+
+export function getFacultyApplications() {
+  return apiFetch('/project-applications/faculty')
+}
+
+export function approveFacultyApplication(applicationId, approved, comment = '', rejectionReason = '') {
+  return apiFetch(`/project-applications/${applicationId}/faculty-approval`, {
+    method: 'PATCH',
+    body: JSON.stringify({ approved, comment, rejectionReason })
+  })
 }
