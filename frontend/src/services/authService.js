@@ -51,29 +51,113 @@ export async function loginUser(email, password) {
   return data;
 }
 
+export async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem("refreshToken");
+
+  if (!refreshToken) {
+    throw new Error("Refresh token not found.");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/user/refresh`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      refreshToken,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || "Token refresh failed");
+  }
+
+  const newAccessToken = data.newRefreshToken?.accessToken;
+  const newRefreshToken = data.newRefreshToken?.refreshToken;
+
+  if (!newAccessToken || !newRefreshToken) {
+    throw new Error("New tokens not received.");
+  }
+
+  localStorage.setItem("accessToken", newAccessToken);
+  localStorage.setItem("refreshToken", newRefreshToken);
+
+  return data;
+}
+
 export async function logoutUser() {
-  const accessToken = localStorage.getItem("accessToken");
+  let accessToken = localStorage.getItem("accessToken");
 
   if (!accessToken) {
     throw new Error("User is not logged in.");
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/user/logout`, {
+  // First try logout with the current access token
+  let response = await fetch(`${API_BASE_URL}/api/user/logout`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
   });
 
+  // If access token has expired, refresh it and retry logout
+  if (response.status === 401 || response.status === 403) {
+    await refreshAccessToken();
+
+    accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      throw new Error("New access token not found.");
+    }
+
+    // Retry logout with the new access token
+    response = await fetch(`${API_BASE_URL}/api/user/logout`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  }
+
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Logout failed");
+    throw new Error(data.message || data.error || "Logout failed");
   }
 
+  // Clear tokens only after successful logout
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   clearUserRole();
+
+  return data;
+}
+
+export async function forgotPassword(email) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/user/forgot-password`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        data.error ||
+        "Failed to send reset instructions."
+    );
+  }
 
   return data;
 }

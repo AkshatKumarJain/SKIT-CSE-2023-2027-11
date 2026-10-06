@@ -1,40 +1,36 @@
 import mongoose, { HydratedDocument } from "mongoose";
 
-export type ProjectSource =
-    | "OWN_IDEA"
-    | "FACULTY_PROJECT"
-    | "PROJECT_BANK";
+export const PROJECT_SOURCES = [
+  "OWN_IDEA",
+  "FACULTY_PROJECT",
+  "PROJECT_BANK",
+] as const;
+export type ProjectSource = (typeof PROJECT_SOURCES)[number];
 
+export const PROJECT_VISIBILITY_STATUSES = [
+  "AVAILABLE",
+  "RESERVED",
+  "ALLOCATED",
+  "HIDDEN",
+] as const;
 export type ProjectVisibilityStatus =
-    | "AVAILABLE"
-    | "RESERVED"
-    | "ALLOCATED"
-    | "HIDDEN";
+  (typeof PROJECT_VISIBILITY_STATUSES)[number];
 
 export interface IProject {
-    _id: mongoose.Types.ObjectId;
-
-    title: string;
-
-    description: string;
-
-    domain: string;
-
-    sdgGoals: string[];
-
-    technologyStack: string[];
-
-    expectedOutcome?: string;
-
-    source: ProjectSource;
-
-    createdBy: mongoose.Types.ObjectId;
-
-    facultyId?: mongoose.Types.ObjectId | null;
-
-    maxTeamSize: number;
-
-    visibilityStatus: ProjectVisibilityStatus;
+  _id: mongoose.Types.ObjectId;
+  title: string;
+  domain: string;
+  description: string;
+  specificFunctionalities?: string[];
+  sdgGoals: string[];
+  technologies: string[];
+  source: ProjectSource;
+  createdBy: mongoose.Types.ObjectId;
+  facultyId?: mongoose.Types.ObjectId | null;
+  maxTeamSize: number;
+  visibilityStatus: ProjectVisibilityStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type ProjectDocument = HydratedDocument<IProject>;
