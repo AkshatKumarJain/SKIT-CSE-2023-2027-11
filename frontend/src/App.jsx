@@ -13,6 +13,14 @@ import StudentDashboard from "./pages/StudentDashboard/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
 
+import ProjectSelection from "./pages/Projectselection/Projectselection";
+import StudentIdea from "./pages/Studentidea/Studentidea";
+import FacultyIdea from "./pages/Facultyidea/Facultyidea";
+import ProjectBank from "./pages/Projectbank/Projectbank";
+import TeamSelection from "./pages/TeamSelection/TeamSelection";
+
+import "./pages/Projectselection/Projectselection.css";
+
 function App() {
   const role = getUserRole();
 
@@ -21,10 +29,38 @@ function App() {
       <Navbar />
 
       <Routes>
+        {/* Authentication */}
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/profile" element={<Profile />} />
 
+        {/* Project Selection */}
+        <Route
+          path="/project-selection"
+          element={<ProjectSelection />}
+        />
+
+        <Route
+          path="/project-selection/student-idea"
+          element={<StudentIdea />}
+        />
+
+        <Route
+          path="/project-selection/faculty"
+          element={<FacultyIdea />}
+        />
+
+        <Route
+          path="/project-selection/bank"
+          element={<ProjectBank />}
+        />
+
+        <Route
+          path="/project-selection/team"
+          element={<TeamSelection />}
+        />
+
+        {/* Student Dashboard */}
         <Route
           path="/student/dashboard"
           element={
@@ -36,6 +72,7 @@ function App() {
           <Route index element={<StudentDashboard />} />
         </Route>
 
+        {/* Teacher Dashboard */}
         <Route
           path="/teacher/dashboard"
           element={
@@ -47,6 +84,7 @@ function App() {
           <Route index element={<TeacherDashboard />} />
         </Route>
 
+        {/* Admin Dashboard */}
         <Route
           path="/admin/dashboard"
           element={
