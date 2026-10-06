@@ -1,7 +1,7 @@
 import { setUserRole, clearUserRole } from "./auth";
 
 const API_BASE_URL =
-  "https://noncasuistical-rolf-unurged.ngrok-free.dev";
+  "https://congested-coherent-calculate.ngrok-free.dev";
 
 export async function loginUser(email, password) {
   const response = await fetch(`${API_BASE_URL}/api/user/login`, {
@@ -63,7 +63,9 @@ export async function refreshAccessToken() {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(refreshToken),
+    body: JSON.stringify({
+      refreshToken,
+    }),
   });
 
   const data = await response.json();
@@ -86,28 +88,76 @@ export async function refreshAccessToken() {
 }
 
 export async function logoutUser() {
-  const accessToken = localStorage.getItem("accessToken");
+  let accessToken = localStorage.getItem("accessToken");
 
   if (!accessToken) {
     throw new Error("User is not logged in.");
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/user/logout`, {
+  // First try logout with the current access token
+  let response = await fetch(`${API_BASE_URL}/api/user/logout`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
   });
 
+  // If access token has expired, refresh it and retry logout
+  if (response.status === 401 || response.status === 403) {
+    await refreshAccessToken();
+
+    accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      throw new Error("New access token not found.");
+    }
+
+    // Retry logout with the new access token
+    response = await fetch(`${API_BASE_URL}/api/user/logout`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  }
+
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Logout failed");
+    throw new Error(data.message || data.error || "Logout failed");
   }
 
+  // Clear tokens only after successful logout
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   clearUserRole();
+
+  return data;
+}
+
+export async function forgotPassword(email) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/user/forgot-password`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        data.error ||
+        "Failed to send reset instructions."
+    );
+  }
 
   return data;
 }
