@@ -25,6 +25,20 @@ class ProjectController {
     return res.status(201).json({ success: true, data: project });
   }
 
+  async bulkCreate(req: Request, res: Response): Promise<Response> {
+    const userId = auth(req);
+    const projects = await projectService.createProjectsBulk(
+      userId,
+      req.user?.role,
+      req.body?.projects,
+    );
+    return res.status(201).json({
+      success: true,
+      data: projects,
+      message: `${projects.length} projects uploaded`,
+    });
+  }
+
   async list(req: Request, res: Response): Promise<Response> {
     auth(req);
     return res.json({

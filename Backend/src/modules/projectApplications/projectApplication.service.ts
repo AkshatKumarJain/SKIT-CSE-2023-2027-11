@@ -187,7 +187,7 @@ class ProjectApplicationService {
     projectId?: mongoose.Types.ObjectId | null;
     source: ApplicationSource;
     projectDetails?: ProjectDetails;
-    mentorId: string;
+    mentorId: string | mongoose.Types.ObjectId;
     facultyId?: mongoose.Types.ObjectId | null;
     status: ApplicationStatus;
   }) {
@@ -258,27 +258,37 @@ class ProjectApplicationService {
     return { team, project };
   }
 
+  // Faculty idea: student picks the faculty's project (no mentor selection).
+  // Flow: FACULTY_REVIEW (faculty who created it) -> ADMIN_FINAL_REVIEW -> APPROVED
   async applyForFacultyProject(
     studentId: string,
-    data: { teamId?: string; projectId?: string; mentorId?: string },
+    data: { teamId?: string; projectId?: string },
   ) {
     const teamId = data.teamId;
     const projectId = data.projectId;
-    const mentorId = data.mentorId;
-    if (!teamId || !projectId || !mentorId)
+    if (!teamId || !projectId)
       fail(
-        "teamId, projectId and mentorId are required",
+        "teamId and projectId are required",
         400,
         ERROR_CODES.VALIDATION_ERROR,
       );
-    const { team } = await this.getSelectableExistingProject(
+    const { team, project } = await this.getSelectableExistingProject(
       studentId,
       teamId!,
       projectId!,
       "FACULTY_PROJECT",
     );
     const validTeam = team!;
-    await this.validateMentor(mentorId!);
+    if (!project.facultyId)
+      fail(
+        "This faculty project has no creating faculty",
+        400,
+        ERROR_CODES.TEACHER_NOT_FOUND,
+      );
+    // A faculty may CREATE any number of projects, but can MENTOR at most 3
+    // teams. Since the creating faculty mentors the team that picks the
+    // project, block the selection when that faculty is already at capacity.
+    await this.validateMentor(project.facultyId!.toString());
 
     const reserved = await projectService.reserveProject(
       projectId!,
@@ -291,58 +301,8 @@ class ProjectApplicationService {
         teamId: validTeam._id,
         projectId: validReserved._id,
         source: "FACULTY_PROJECT",
-        mentorId: mentorId!,
-        facultyId: validReserved.facultyId ?? null,
-        status: "MENTOR_REVIEW",
-      });
-    } catch (error) {
-      await projectService.releaseProject(validReserved._id);
-      throw error;
-    }
-  }
-
-  async applyForProjectBank(
-    studentId: string,
-    data: { teamId?: string; projectId?: string; mentorId?: string },
-  ) {
-    const teamId = data.teamId;
-    const projectId = data.projectId;
-    const mentorId = data.mentorId;
-    if (!teamId || !projectId || !mentorId)
-      fail(
-        "teamId, projectId and mentorId are required",
-        400,
-        ERROR_CODES.VALIDATION_ERROR,
-      );
-    const { team } = await this.getSelectableExistingProject(
-      studentId,
-      teamId!,
-      projectId!,
-      "PROJECT_BANK",
-    );
-    const validTeam = team!;
-    await this.validateMentor(mentorId!);
-
-    const reserved = await projectService.reserveProject(
-      projectId!,
-      "PROJECT_BANK",
-    );
-    const validReserved = reserved!;
-    if (!validReserved.facultyId) {
-      await projectService.releaseProject(validReserved._id);
-      fail(
-        "This Project Bank project does not have an assigned faculty approver",
-        400,
-        ERROR_CODES.TEACHER_NOT_FOUND,
-      );
-    }
-    try {
-      return await this.createApplication({
-        studentId,
-        teamId: validTeam._id,
-        projectId: validReserved._id,
-        source: "PROJECT_BANK",
-        mentorId: mentorId!,
+        // the faculty who created the project is also the mentor
+        mentorId: validReserved.facultyId!,
         facultyId: validReserved.facultyId!,
         status: "FACULTY_REVIEW",
       });
@@ -352,10 +312,128 @@ class ProjectApplicationService {
     }
   }
 
+  // Project bank: admin created the project without a faculty; student picks the
+  // project AND a mentor.
+  // Flow: MENTOR_REVIEW (chosen mentor) -> ADMIN_FINAL_REVIEW -> APPROVED
+  async applyForProjectBank(
+    studentId: string,
+    data: { projectId?: string; mentorId?: string },
+  ) {
+    const projectId = data.projectId;
+    const mentorId = data.mentorId;
+
+    if (!projectId || !mentorId) {
+      fail(
+        "projectId and mentorId are required",
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
+    }
+
+    await this.ensureStudent(studentId);
+
+    if (!mongoose.isValidObjectId(projectId)) {
+      fail("Invalid project id", 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // Resolve the team from the authenticated student. Only a completed
+    // team whose leader is the authenticated student can submit.
+    const teamModel = getTeamModel();
+    const team = await teamModel.findOne({
+      leaderId: studentId,
+      status: "COMPLETED",
+    });
+
+    if (!team) {
+      fail(
+        "You must have a completed team before applying for a Project Bank project",
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
+    }
+
+    const validTeam = team!;
+    const totalSize = 1 + validTeam.memberIds.length;
+
+    if (totalSize < 2 || totalSize > 4) {
+      fail(
+        "Team must contain between 2 and 4 students",
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
+    }
+
+    if (validTeam.leaderId.toString() !== studentId) {
+      fail(
+        "Only the team leader can submit a project application",
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+
+    // A team can have only one active project application at a time.
+    const activeApplication = await projectApplicationModel.exists({
+      teamId: validTeam._id,
+      status: { $in: ACTIVE_APPLICATION_STATUSES },
+    });
+
+    if (activeApplication) {
+      fail(
+        "This team already has an active project application",
+        409,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
+    }
+
+    await this.ensureSelectionOpen("PROJECT_BANK");
+
+    // The project must still be visible to students when the application
+    // starts. reserveProject() performs the atomic AVAILABLE -> RESERVED
+    // transition below.
+    const project = await projectModel.findOne({
+      _id: projectId,
+      source: "PROJECT_BANK",
+      visibilityStatus: "AVAILABLE",
+    });
+
+    if (!project) {
+      fail("Project is not available", 409, ERROR_CODES.PROJECT_NOT_AVAILABLE);
+    }
+
+    // The selected mentor must be a teacher and have fewer than 3 active
+    // applications.
+    await this.validateMentor(mentorId!);
+
+    // Student submission reserves the project immediately.
+    const reserved = await projectService.reserveProject(
+      projectId!,
+      "PROJECT_BANK",
+    );
+    const validReserved = reserved!;
+
+    try {
+      // IMPORTANT: Project Bank has NO faculty-creator approval stage.
+      // The selected mentor is the first approver.
+      return await this.createApplication({
+        studentId,
+        teamId: validTeam._id,
+        projectId: validReserved._id,
+        source: "PROJECT_BANK",
+        mentorId: mentorId!,
+        facultyId: null,
+        status: "MENTOR_REVIEW",
+      });
+    } catch (error) {
+      // If application creation fails after reservation, return the project
+      // to AVAILABLE so the student can apply again.
+      await projectService.releaseProject(validReserved._id);
+      throw error;
+    }
+  }
   async getAvailableMentors() {
     const mentors = await userModel
       .find({ role: "teacher" })
-      .select("name email phoneNo")
+      .select("name email phoneNo department")
       .sort({ name: 1 })
       .lean();
     const counts = await projectApplicationModel.aggregate([
@@ -380,7 +458,10 @@ class ProjectApplicationService {
   }
 
   async getMentorApplications(mentorId: string) {
-    await this.validateMentor(mentorId, undefined);
+    // Only check the user is a teacher. validateMentor() also enforces the
+    // 3-application capacity, which made a mentor at capacity unable to even
+    // list (and therefore approve/reject) their own applications.
+    await this.ensureTeacher(mentorId);
     return this.populateList({ mentorId, status: "MENTOR_REVIEW" });
   }
 
@@ -421,15 +502,15 @@ class ProjectApplicationService {
     return projectApplicationModel
       .find(filter)
       .sort({ createdAt: -1 })
-      .populate("studentId", "name email phoneNo")
-      .populate("mentorId", "name email phoneNo")
-      .populate("facultyId", "name email phoneNo")
+      .populate("studentId", "name email phoneNo department")
+      .populate("mentorId", "name email phoneNo department")
+      .populate("facultyId", "name email phoneNo department")
       .populate("projectId")
       .populate({
         path: "teamId",
         populate: [
-          { path: "leaderId", select: "name email phoneNo" },
-          { path: "memberIds", select: "name email phoneNo" },
+          { path: "leaderId", select: "name email phoneNo department" },
+          { path: "memberIds", select: "name email phoneNo department" },
         ],
       });
   }
@@ -437,15 +518,15 @@ class ProjectApplicationService {
   private populateOne(applicationId: mongoose.Types.ObjectId | string) {
     return projectApplicationModel
       .findById(applicationId)
-      .populate("studentId", "name email phoneNo")
-      .populate("mentorId", "name email phoneNo")
-      .populate("facultyId", "name email phoneNo")
+      .populate("studentId", "name email phoneNo department")
+      .populate("mentorId", "name email phoneNo department")
+      .populate("facultyId", "name email phoneNo department")
       .populate("projectId")
       .populate({
         path: "teamId",
         populate: [
-          { path: "leaderId", select: "name email phoneNo" },
-          { path: "memberIds", select: "name email phoneNo" },
+          { path: "leaderId", select: "name email phoneNo department" },
+          { path: "memberIds", select: "name email phoneNo department" },
         ],
       });
   }
@@ -511,7 +592,6 @@ class ProjectApplicationService {
     );
     if (application.status === "REJECTED")
       return this.populateOne(application._id);
-    application.status = "ADMIN_APPROVED";
     application.status = "MENTOR_REVIEW";
     await application.save();
     return this.populateOne(application._id);
@@ -546,7 +626,6 @@ class ProjectApplicationService {
       input,
     ))!;
     if (decided.status === "REJECTED") return this.populateOne(decided._id);
-    decided.status = "MENTOR_APPROVED";
     decided.status = "ADMIN_FINAL_REVIEW";
     await decided.save();
     return this.populateOne(decided._id);
@@ -582,7 +661,6 @@ class ProjectApplicationService {
       input,
     ))!;
     if (decided.status === "REJECTED") return this.populateOne(decided._id);
-    decided.status = "FACULTY_APPROVED";
     decided.status = "ADMIN_FINAL_REVIEW";
     await decided.save();
     return this.populateOne(decided._id);
