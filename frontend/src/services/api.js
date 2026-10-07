@@ -8,7 +8,7 @@ import { refreshAccessToken, clearAuthData } from "./authService";
 
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://congested-coherent-calculate.ngrok-free.dev";
+  "https://noncasuistical-rolf-unurged.ngrok-free.dev";
 
 // Route prefixes each backend module is mounted on.
 export const ENDPOINTS = {

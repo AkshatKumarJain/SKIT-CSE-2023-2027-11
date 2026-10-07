@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 
 import Login from "./pages/Login/Login";
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import Profile from "./pages/Profile/Profile";
 
 import StudentDashboard from "./pages/StudentDashboard/StudentDashboard";
@@ -45,6 +46,11 @@ function AppContent() {
         <Route
           path="/forgot-password"
           element={<ForgotPassword />}
+        />
+
+        <Route
+          path="/reset-password/:token"
+          element={<ResetPassword />}
         />
 
         <Route
@@ -140,4 +146,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 
