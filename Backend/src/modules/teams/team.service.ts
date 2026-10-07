@@ -108,7 +108,12 @@ class TeamService {
     const students = await userModel
       .find({
         role: "student",
-        department: b,
+        // department is stored exactly as entered at registration, while b is
+        // lower-cased for comparison, so match case-insensitively.
+        department: new RegExp(
+          `^\\s*${b.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`,
+          "i",
+        ),
         _id: { $nin: [u._id, ...t.memberIds] },
       })
       .select("name email department phoneNo")
@@ -167,6 +172,17 @@ class TeamService {
     return created;
   }
   async teamRequests(uid: string, tid: string) {
+    if (!mongoose.isValidObjectId(tid)) this.fail("Invalid team id");
+    const team = await teamModel.findById(tid);
+    if (!team) this.fail("Team not found", 404, ERROR_CODES.NOT_FOUND);
+    // The frontend loads this for every team member, not just the leader.
+    // Non-leader members have no sent requests, so return an empty list
+    // instead of a 403 that broke the whole Team Selection page for them.
+    if (
+      sid(team.leaderId) !== uid &&
+      team.memberIds.some((x) => sid(x) === uid)
+    )
+      return [];
     const t = await this.leaderTeam(uid, tid);
     return requestModel
       .find({ teamId: t._id })
