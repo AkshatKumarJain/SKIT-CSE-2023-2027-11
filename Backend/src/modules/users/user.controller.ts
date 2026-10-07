@@ -33,7 +33,7 @@ class UserController {
     }
 
     async refresh(req: Request, res: Response): Promise<Response> {
-        const refreshToken = req.body;
+        const {refreshToken} = req.body;
         if(!refreshToken)
         {
             throw new AppError("Invalid or empty refresh token", 404, ERROR_CODES.VALIDATION_ERROR);
