@@ -9,7 +9,12 @@ import { access } from "node:fs";
 import crypto from "crypto"
 import { redisClient } from "../../config/redis";
 import transporter from "../../config/nodemailer";
+import { IUpdateProfile } from "./user.type";
+import { uploadOnCloudinary } from "../../config/cloudinary";
+import jwt from "jsonwebtoken";
 // import http from "http";
+
+// config.isProd = true;
 
 class UserService {
     async login(email: string, password: string) {
@@ -44,8 +49,14 @@ class UserService {
         if (!refreshToken) {
             throw new AppError("Refresh token is required", 400, "REFRESH_TOKEN_REQUIRED");
         }
+ console.log("Refresh token received:", refreshToken);
+  const decoded = jwt.decode(refreshToken);
+    console.log("Decoded refresh token:", decoded);
 
+        const keys = await redisClient.keys("*");
+        console.log("Redis keys:", keys);
         const newRefreshToken = await rotateRefreshToken(refreshToken);
+          
 
         if (!newRefreshToken) {
             throw new AppError("Invalid or expired refresh token", 401, "INVALID_REFRESH_TOKEN");
@@ -143,6 +154,52 @@ class UserService {
         //     message: "Password reset successful. Please login again.",
         // };
         return true;
+    }
+
+    async updateUserProfile({userId, phoneNumber, file}: IUpdateProfile) {
+        const updatedData: any = {};
+        if(phoneNumber) updatedData.phoneNumber = phoneNumber;
+        
+        if(file)
+        {
+            const image = await this.uploadImage(file);
+            console.log("CLOUDINARY URL RECEIVED ", image.url);
+            updatedData.profilePhotoUrl = image.url;
+            updatedData.profilePhotoPublicId = image.publicId;
+        }
+
+        console.log("updated object ", updatedData);
+
+
+        const updatedUserProfile = await userModel.findByIdAndUpdate(userId, 
+            {$set: updatedData},
+            {new: true}
+        );
+
+        if(!updatedUserProfile)
+        {
+            throw new AppError("User not found", 400, ERROR_CODES.USER_NOT_FOUND);
+        }
+        return updatedUserProfile;
+    }    
+
+    async uploadImage(file: Express.Multer.File) {
+        if(!file)
+        {
+            throw new AppError("File not provided", 403, ERROR_CODES.VALIDATION_ERROR);
+        }
+        const localFilePath = file.path;
+        const cloudinaryResponse = await uploadOnCloudinary(localFilePath);
+
+        if(!cloudinaryResponse)
+        {
+            throw new AppError("Cloudinary upload failed", 400, ERROR_CODES.FILE_UPLOAD_FAILED);
+        }
+
+        return {
+            url: cloudinaryResponse.secure_url,
+            publicId: cloudinaryResponse.public_id
+        }
     }
 }
 
