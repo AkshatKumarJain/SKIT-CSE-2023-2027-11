@@ -1,7 +1,7 @@
 import { setUserRole, clearUserRole } from "./auth";
 
 const API_BASE_URL =
-  "https://congested-coherent-calculate.ngrok-free.dev";
+  "https://noncasuistical-rolf-unurged.ngrok-free.dev";
 
 export async function loginUser(email, password) {
   const response = await fetch(`${API_BASE_URL}/api/user/login`, {
@@ -94,7 +94,6 @@ export async function logoutUser() {
     throw new Error("User is not logged in.");
   }
 
-  // First try logout with the current access token
   let response = await fetch(`${API_BASE_URL}/api/user/logout`, {
     method: "POST",
     headers: {
@@ -102,7 +101,6 @@ export async function logoutUser() {
     },
   });
 
-  // If access token has expired, refresh it and retry logout
   if (response.status === 401 || response.status === 403) {
     await refreshAccessToken();
 
@@ -112,7 +110,6 @@ export async function logoutUser() {
       throw new Error("New access token not found.");
     }
 
-    // Retry logout with the new access token
     response = await fetch(`${API_BASE_URL}/api/user/logout`, {
       method: "POST",
       headers: {
@@ -127,7 +124,6 @@ export async function logoutUser() {
     throw new Error(data.message || data.error || "Logout failed");
   }
 
-  // Clear tokens only after successful logout
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   clearUserRole();
@@ -156,6 +152,34 @@ export async function forgotPassword(email) {
       data.message ||
         data.error ||
         "Failed to send reset instructions."
+    );
+  }
+
+  return data;
+}
+
+export async function resetPassword(email, newPassword) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/user/reset-password`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        newPassword,
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        data.error ||
+        "Failed to reset password."
     );
   }
 
