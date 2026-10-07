@@ -15,6 +15,14 @@ import TeacherDashboard from "./pages/TeacherDashboard/TeacherDashboard";
 import TeacherProjectProposal from "./pages/TeacherProjectProposal/TeacherProjectProposal";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
 
+import ProjectSelection from "./pages/Projectselection/Projectselection";
+import StudentIdea from "./pages/Studentidea/Studentidea";
+import FacultyIdea from "./pages/Facultyidea/Facultyidea";
+import ProjectBank from "./pages/Projectbank/Projectbank";
+import TeamSelection from "./pages/TeamSelection/TeamSelection";
+
+import "./pages/Projectselection/Projectselection.css";
+
 function AppContent() {
   const location = useLocation();
 
@@ -31,6 +39,7 @@ function AppContent() {
       <Navbar isLoggedIn={isLoggedIn} />
 
       <Routes>
+        {/* Authentication */}
         <Route path="/login" element={<Login />} />
 
         <Route
@@ -43,6 +52,33 @@ function AppContent() {
           element={<Profile />}
         />
 
+        {/* Project Selection */}
+        <Route
+          path="/project-selection"
+          element={<ProjectSelection />}
+        />
+
+        <Route
+          path="/project-selection/student-idea"
+          element={<StudentIdea />}
+        />
+
+        <Route
+          path="/project-selection/faculty"
+          element={<FacultyIdea />}
+        />
+
+        <Route
+          path="/project-selection/bank"
+          element={<ProjectBank />}
+        />
+
+        <Route
+          path="/project-selection/team"
+          element={<TeamSelection />}
+        />
+
+        {/* Student Dashboard */}
         <Route
           path="/student/dashboard"
           element={
@@ -57,6 +93,7 @@ function AppContent() {
           />
         </Route>
 
+        {/* Teacher Dashboard */}
         <Route
           path="/teacher/dashboard"
           element={
@@ -76,6 +113,7 @@ function AppContent() {
           />
         </Route>
 
+        {/* Admin Dashboard */}
         <Route
           path="/admin/dashboard"
           element={
