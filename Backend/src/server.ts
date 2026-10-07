@@ -1,8 +1,16 @@
+import dns from "dns";
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+dns.setDefaultResultOrder("ipv4first");
+
 import express from "express";
-import "dotenv/config"
+import "dotenv/config";
 import cors from "cors";
+
 import { connectDB } from "./config/db";
 import { errorHandler } from "./middlewares/errorHandler";
+
+import userRouter from "./modules/users/user.route";
 import userRouter from "./modules/users/user.route";
 import studentRouter from "./modules/students/student.route";
 import teacherRouter from "./modules/teachers/teacher.route";
@@ -15,24 +23,24 @@ import teamRequestRoute from "./modules/teamRequests/teamRequest.route";
 import { connectRedis, disconnectRedis } from "./config/redis";
 
 const app = express();
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-  }),
-);
-app.use(express.json());
-
-connectRedis();
-
-connectDB();
-
-app.get("/health", (req, res) => {
-  res.json({
-    message: "Server is running",
-  });
-});
 
 const PORT = process.env.PORT || 8000;
+
+app.use(
+    cors({
+        origin: process.env.FRONTEND_URL || "http://localhost:5173",
+        
+        credentials: true,
+    })
+);
+
+app.use(express.json());
+
+app.get("/health", (req, res) => {
+    res.json({
+        message: "Server is running",
+    });
+});
 
 app.use("/api/user/", userRouter);
 app.use("/api/projects/", projectRoute);
@@ -43,14 +51,25 @@ app.use("/api/team-requests/", teamRequestRoute);
 app.use("/api/student/", studentRouter);
 app.use("/api/teacher/", teacherRouter);
 
-// last
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+    try {
+        await connectDB();
+
+        await connectRedis();
+
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error("Failed to start server:", error);
+    }
+};
+
+startServer();
 
 process.on("SIGINT", async () => {
-  await disconnectRedis();
-  process.exit(1);
+    await disconnectRedis();
+    process.exit(0);
 });

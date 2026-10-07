@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import projectSelectionModel from "./projectSelection.model";
 import { AppError } from "../../errors/AppError";
 import { ERROR_CODES } from "../../errors/errorCodes";
-import { SelectionPhase } from "./projectSelection.type";
+import { SELECTION_PHASES, SelectionPhase } from "./projectSelection.type";
 
 const fail = (message: string, status: number, code: string): never => {
   throw new AppError(message, status, code);
@@ -72,6 +72,12 @@ class ProjectSelectionService {
   }) {
     const phase = data.phase;
     if (!phase) fail("phase is required", 400, ERROR_CODES.VALIDATION_ERROR);
+    if (!SELECTION_PHASES.includes(phase!))
+      fail(
+        `phase must be one of ${SELECTION_PHASES.join(", ")}`,
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
     const existing = await projectSelectionModel.findOne({ phase: phase! });
     if (existing)
       fail("Selection phase already exists", 409, ERROR_CODES.VALIDATION_ERROR);
@@ -132,11 +138,13 @@ class ProjectSelectionService {
     if (!phase) fail("Selection phase not found", 404, ERROR_CODES.NOT_FOUND);
     const validPhase = phase!;
     const start =
-      data.startDate === undefined
+      data.startDate === undefined || data.startDate === null
         ? validPhase.startDate
         : new Date(data.startDate);
     const end =
-      data.endDate === undefined ? validPhase.endDate : new Date(data.endDate);
+      data.endDate === undefined || data.endDate === null
+        ? validPhase.endDate
+        : new Date(data.endDate);
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
       fail("Invalid selection dates", 400, ERROR_CODES.VALIDATION_ERROR);
     if (start >= end)
