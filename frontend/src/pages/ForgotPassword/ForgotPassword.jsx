@@ -1,13 +1,17 @@
 import "./ForgotPassword.css";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { forgotPassword } from "../../services/authService";
+
 function ForgotPassword() {
     const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         setError("");
@@ -18,10 +22,25 @@ function ForgotPassword() {
             return;
         }
 
-        setMessage(
-            `If an account exists for ${email}, password reset instructions will be sent.`
-        );
+        try {
+            setIsLoading(true);
+
+            const data = await forgotPassword(email);
+
+            setMessage(
+                data.message ||
+                `If an account exists for ${email}, password reset instructions will be sent.`
+            );
+        } catch (error) {
+            setError(
+                error.message ||
+                "Unable to process your request. Please try again."
+            );
+        } finally {
+            setIsLoading(false);
+        }
     };
+
     return (
         <div className="forgot-password-page">
             <div className="forgot-password-card">
@@ -41,6 +60,7 @@ function ForgotPassword() {
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label htmlFor="email">College Email</label>
+
                         <input
                             type="email"
                             id="email"
@@ -50,11 +70,16 @@ function ForgotPassword() {
                             title="Please use your SKIT college email"
                             onChange={(e) => setEmail(e.target.value)}
                             required
+                            disabled={isLoading}
                         />
                     </div>
 
-                    <button type="submit" className="reset-button">
-                        Send Reset Link
+                    <button
+                        type="submit"
+                        className="reset-button"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? "Sending..." : "Send Reset Link"}
                     </button>
                 </form>
 
@@ -69,6 +94,7 @@ function ForgotPassword() {
                         {message}
                     </p>
                 )}
+
                 <button
                     type="button"
                     className="back-to-login"

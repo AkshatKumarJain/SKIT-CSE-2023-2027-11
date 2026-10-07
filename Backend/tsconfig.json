@@ -43,6 +43,28 @@
 //     "skipLibCheck": true,
 //   }
 // }
+// {
+//   "compilerOptions": {
+//     "target": "esnext",
+//     "module": "CommonJS",
+
+//     "rootDir": "./src",
+//     "outDir": "./dist",
+
+//     "strict": true,
+//     "esModuleInterop": true,
+
+//     "types": ["node"],
+//     "sourceMap": true,
+
+//     "noUncheckedIndexedAccess": true,
+//     "exactOptionalPropertyTypes": true,
+
+//     "skipLibCheck": true,
+//   },
+//   "include": ["src/**/*"]
+// }
+
 {
   "compilerOptions": {
     "target": "esnext",
@@ -54,13 +76,12 @@
     "strict": true,
     "esModuleInterop": true,
 
-    "types": ["node"],
     "sourceMap": true,
 
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
 
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["src/**/*"]
 }

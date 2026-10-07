@@ -1,36 +1,44 @@
 import { apiFetch } from './api'
 
 export function submitOwnIdea(payload) {
-  return apiFetch('/project-applications/own-idea', { method: 'POST', body: JSON.stringify(payload) })
+  return apiFetch('/api/project-applications/own-idea', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
 }
 
 export function applyFacultyProject(payload) {
-  return apiFetch('/project-applications/faculty-project', { method: 'POST', body: JSON.stringify(payload) })
+  return apiFetch('/api/project-applications/faculty-project', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
 }
 
 export function applyProjectBank(payload) {
-  return apiFetch('/project-applications/project-bank', { method: 'POST', body: JSON.stringify(payload) })
+  return apiFetch('/api/project-applications/project-bank', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
 }
 
 export function getMyApplications() {
-  return apiFetch('/project-applications/my')
+  return apiFetch('/api/project-applications/my')
 }
 
 export function getApplicationById(applicationId) {
-  return apiFetch(`/project-applications/${applicationId}`)
+  return apiFetch(`/api/project-applications/${applicationId}`)
 }
 
 export function getAvailableMentors() {
-  return apiFetch('/project-applications/available-mentors')
-}
-
-export function getFacultyApplications() {
-  return apiFetch('/project-applications/faculty')
-}
-
-export function approveFacultyApplication(applicationId, approved, comment = '', rejectionReason = '') {
-  return apiFetch(`/project-applications/${applicationId}/faculty-approval`, {
-    method: 'PATCH',
-    body: JSON.stringify({ approved, comment, rejectionReason })
-  })
+  return apiFetch('/api/project-applications/available-mentors').then(
+    (list) =>
+      (list || []).map((faculty) => ({
+        id: faculty._id,
+        name: faculty.name,
+        department: faculty.department || '',
+        specialization: faculty.specialization || '',
+        email: faculty.email,
+        phoneNo: faculty.phoneNo
+      }))
+  )
 }

@@ -1,63 +1,99 @@
 import { apiFetch } from './api'
 
-const phaseMeta = {
-  OWN_IDEA: {
+const STAGE_META = [
+  {
+    id: 'student-idea',
+    phase: 'OWN_IDEA',
     number: 1,
     title: 'Student Proposed Idea',
-    description: 'Submit your own project proposal and select a mentor.',
+    description:
+      'Propose an original project idea with your own team and request a mentor for guidance.',
+    whatHappens: [
+      'Submit a project title, description, functionalities, technologies and SDG alignment',
+      'Select a preferred faculty mentor',
+      'Faculty coordinator reviews and approves your proposal'
+    ],
     route: '/project-selection/student-idea',
-    actionLabel: 'Propose Your Idea'
+    actionLabel: 'Start Proposal'
   },
-  FACULTY_PROJECT: {
+  {
+    id: 'faculty-project',
+    phase: 'FACULTY_PROJECT',
     number: 2,
-    title: 'Faculty Proposed Projects',
-    description: 'Choose from projects proposed by faculty members.',
+    title: 'Faculty Proposed Project',
+    description:
+      'Browse projects floated by faculty members and apply for one that matches your interest.',
+    whatHappens: [
+      'View project topics listed by faculty across departments',
+      'Read the full project description and technologies used',
+      'Apply directly under the concerned faculty mentor',
+      'Only one team can be picked per project, on a first-come basis'
+    ],
     route: '/project-selection/faculty',
-    actionLabel: 'Browse Faculty Projects'
+    actionLabel: 'Browse Projects'
   },
-  PROJECT_BANK: {
+  {
+    id: 'project-bank',
+    phase: 'PROJECT_BANK',
     number: 3,
     title: 'Project Bank',
-    description: 'Choose an available project from the project bank.',
+    description:
+      'Pick a pre-approved project from the department project bank if you have not been allotted one yet.',
+    whatHappens: [
+      'Browse previously approved and archived project topics',
+      'Filter by domain and check availability',
+      'Select a project and choose your own mentor to auto-generate your proposal',
+      'Only one team can be picked per project, on a first-come basis'
+    ],
     route: '/project-selection/bank',
-    actionLabel: 'Browse Project Bank'
+    actionLabel: 'View Project Bank'
   }
+]
+
+function formatDate(value) {
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  })
 }
 
-function getStatus(startDate, endDate, isActive) {
-  const now = Date.now()
-  const start = new Date(startDate).getTime()
-  const end = new Date(endDate).getTime()
-  if (isActive && now >= start && now < end) return 'OPEN'
+function deriveStatus(window, now) {
+  if (!window || !window.isActive) return 'UPCOMING'
+  const start = new Date(window.startDate)
+  const end = new Date(window.endDate)
   if (now < start) return 'UPCOMING'
-  return 'CLOSED'
+  if (now > end) return 'CLOSED'
+  return 'OPEN'
 }
 
-function normalizePhase(item) {
-  const meta = phaseMeta[item.phase] || { number: 0, title: item.phase, description: '', route: '/project-selection', actionLabel: 'Open' }
-  const status = getStatus(item.startDate, item.endDate, item.isActive)
-  return {
-    id: item._id,
-    phase: item.phase,
-    number: meta.number,
-    title: meta.title,
-    description: meta.description,
-    route: meta.route,
-    actionLabel: meta.actionLabel,
-    status,
-    startDate: item.startDate,
-    endDate: item.endDate,
-    windowLabel: `${new Date(item.startDate).toLocaleString()} – ${new Date(item.endDate).toLocaleString()}`
-  }
+function buildWindowLabel(window, status) {
+  if (!window) return 'Schedule not announced yet'
+  if (status === 'OPEN') return `Open until ${formatDate(window.endDate)}`
+  if (status === 'UPCOMING') return `Opens ${formatDate(window.startDate)}`
+  return `Closed on ${formatDate(window.endDate)}`
 }
 
-export async function getProjectSelectionStages() {
-  const phases = await apiFetch('/project-selection')
-  return phases.map(normalizePhase).sort((a, b) => a.number - b.number)
+async function loadStages() {
+  const windows = await apiFetch('/api/project-selection')
+  const now = new Date()
+
+  return STAGE_META.map((meta) => {
+    const window = (windows || []).find((item) => item.phase === meta.phase)
+    const status = deriveStatus(window, now)
+    return {
+      ...meta,
+      status,
+      windowLabel: buildWindowLabel(window, status)
+    }
+  })
 }
 
-export async function getProjectSelectionStage(phase) {
-  const phases = await getProjectSelectionStages()
-  const aliases = { 'student-idea': 'OWN_IDEA', 'faculty-project': 'FACULTY_PROJECT', 'project-bank': 'PROJECT_BANK' }
-  return phases.find((item) => item.phase === (aliases[phase] || phase)) || null
+export function getProjectSelectionStages() {
+  return loadStages()
+}
+
+export async function getProjectSelectionStage(stageId) {
+  const stages = await loadStages()
+  return stages.find((stage) => stage.id === stageId) || null
 }
