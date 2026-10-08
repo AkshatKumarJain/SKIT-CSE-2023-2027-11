@@ -1,6 +1,12 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
 import { getUserRole } from "./services/auth";
+import { getMyProfile } from "./services/profileService";
 
 import Navbar from "./components/Navbar/Navbar";
 import DashboardLayout from "./components/DashboardLayout/DashboardLayout";
@@ -28,16 +34,44 @@ function AppContent() {
   const location = useLocation();
 
   const [role, setRole] = useState(getUserRole());
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    setRole(getUserRole());
+    const currentRole = getUserRole();
+
+    setRole(currentRole);
+
+    if (!currentRole) {
+      setProfile(null);
+      return;
+    }
+
+    const loadProfile = async () => {
+      try {
+        const data = await getMyProfile();
+        setProfile(data);
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+        setProfile(null);
+      }
+    };
+
+    loadProfile();
   }, [location]);
+
+  const handleProfileUpdate = useCallback((updatedProfile) => {
+    setProfile(updatedProfile);
+  }, []);
 
   const isLoggedIn = !!role;
 
   return (
     <>
-      <Navbar isLoggedIn={isLoggedIn} />
+      <Navbar
+        isLoggedIn={isLoggedIn}
+        name={profile?.name || ""}
+        profileImage={profile?.profilePhotoUrl || ""}
+      />
 
       <Routes>
         {/* Authentication */}
@@ -55,34 +89,47 @@ function AppContent() {
 
         <Route
           path="/profile"
-          element={<Profile />}
+          element={
+            <Profile
+              onProfileUpdate={handleProfileUpdate}
+            />
+          }
         />
 
-        {/* Project Selection */}
+        {/* Student Project Selection */}
         <Route
           path="/project-selection"
-          element={<ProjectSelection />}
-        />
+          element={
+            <ProtectedRoute allowedRole="student">
+              <DashboardLayout role="student" />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={<ProjectSelection />}
+          />
 
-        <Route
-          path="/project-selection/student-idea"
-          element={<StudentIdea />}
-        />
+          <Route
+            path="student-idea"
+            element={<StudentIdea />}
+          />
 
-        <Route
-          path="/project-selection/faculty"
-          element={<FacultyIdea />}
-        />
+          <Route
+            path="faculty"
+            element={<FacultyIdea />}
+          />
 
-        <Route
-          path="/project-selection/bank"
-          element={<ProjectBank />}
-        />
+          <Route
+            path="bank"
+            element={<ProjectBank />}
+          />
 
-        <Route
-          path="/project-selection/team"
-          element={<TeamSelection />}
-        />
+          <Route
+            path="team"
+            element={<TeamSelection />}
+          />
+        </Route>
 
         {/* Student Dashboard */}
         <Route
@@ -146,4 +193,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
