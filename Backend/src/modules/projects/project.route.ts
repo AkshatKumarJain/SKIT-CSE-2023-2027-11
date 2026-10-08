@@ -7,6 +7,7 @@ const requireAuth = authMiddleware({ required: true }) as RequestHandler;
 const router = express.Router();
 
 router.post("/", requireAuth, projectController.create);
+router.post("/bulk", requireAuth, projectController.bulkCreate);
 router.get("/faculty", requireAuth, projectController.faculty);
 router.get("/bank", requireAuth, projectController.bank);
 router.get("/", requireAuth, projectController.list);

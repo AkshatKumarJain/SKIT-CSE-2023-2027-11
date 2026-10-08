@@ -123,7 +123,7 @@ function Login() {
                             type="button"
                             onClick={() => navigate("/forgot-password")}
                         >
-                            Forgot Password?
+                            Forgot Password/Change Password?
                         </button>
                     </div>
 

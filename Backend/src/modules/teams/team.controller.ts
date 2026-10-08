@@ -2,12 +2,10 @@ import { Request, Response } from "express";
 import service from "./team.service";
 class TeamController {
   async create(req: Request, res: Response) {
-    return res
-      .status(201)
-      .json({
-        success: true,
-        data: await service.create(req.user?.userId as string),
-      });
+    return res.status(201).json({
+      success: true,
+      data: await service.create(req.user?.userId as string),
+    });
   }
   async mine(req: Request, res: Response) {
     return res.json({
@@ -31,16 +29,14 @@ class TeamController {
     });
   }
   async request(req: Request, res: Response) {
-    return res
-      .status(201)
-      .json({
-        success: true,
-        data: await service.request(
-          req.user?.userId as string,
-          String(req.params.teamId),
-          req.body?.studentId,
-        ),
-      });
+    return res.status(201).json({
+      success: true,
+      data: await service.request(
+        req.user?.userId as string,
+        String(req.params.teamId),
+        req.body?.studentId,
+      ),
+    });
   }
   async requests(req: Request, res: Response) {
     return res.json({
