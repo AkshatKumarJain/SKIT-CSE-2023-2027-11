@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./TeacherProjectProposal.css";
+import { createTeacherProject } from "../../services/teacherProposeProjectService";
 
 const sdgOptions = [
   { value: "1", label: "SDG 1 - No Poverty" },
@@ -27,14 +28,16 @@ const sdgOptions = [
 function TeacherProjectProposal() {
   const [formData, setFormData] = useState({
     projectTitle: "",
+    domain: "",
     projectDescription: "",
-    specificFunctionality: "",
-    technology: "",
-    sdg: [],
+    specificFunctionalities: "",
+    technologies: "",
+    sdgGoals: [],
   });
 
   const [message, setMessage] = useState("");
   const [isSdgDropdownOpen, setIsSdgDropdownOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (event) => {
     const { id, value } = event.target;
@@ -43,12 +46,14 @@ function TeacherProjectProposal() {
       ...previousData,
       [id]: value,
     }));
+
+    setMessage("");
   };
 
   const addSdg = (value) => {
     setFormData((previousData) => ({
       ...previousData,
-      sdg: [...previousData.sdg, value],
+      sdgGoals: [...previousData.sdgGoals, value],
     }));
 
     setIsSdgDropdownOpen(false);
@@ -58,27 +63,95 @@ function TeacherProjectProposal() {
   const removeSdg = (value) => {
     setFormData((previousData) => ({
       ...previousData,
-      sdg: previousData.sdg.filter((goal) => goal !== value),
+      sdgGoals: previousData.sdgGoals.filter(
+        (goal) => goal !== value
+      ),
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (
-      !formData.projectTitle ||
-      !formData.projectDescription ||
-      !formData.specificFunctionality ||
-      !formData.technology ||
-      formData.sdg.length === 0
+      !formData.projectTitle.trim() ||
+      !formData.domain.trim() ||
+      !formData.projectDescription.trim() ||
+      !formData.specificFunctionalities.trim() ||
+      !formData.technologies.trim() ||
+      formData.sdgGoals.length === 0
     ) {
       setMessage("Please fill in all the fields.");
       return;
     }
 
-    console.log("Project Proposal:", formData);
+    const specificFunctionalities = formData.specificFunctionalities
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item !== "");
 
-    setMessage("Project proposal submitted successfully.");
+    const technologies = formData.technologies
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item !== "");
+
+    if (specificFunctionalities.length === 0) {
+      setMessage("Please enter at least one specific functionality.");
+      return;
+    }
+
+    if (technologies.length === 0) {
+      setMessage("Please enter at least one technology.");
+      return;
+    }
+
+    const projectData = {
+      title: formData.projectTitle.trim(),
+      domain: formData.domain.trim(),
+      description: formData.projectDescription.trim(),
+      specificFunctionalities,
+      sdgGoals: formData.sdgGoals,
+      technologies,
+      source: "FACULTY_PROJECT",
+      maxTeamSize: 4,
+    };
+
+    console.log(
+      "Project Data:",
+      JSON.stringify(projectData, null, 2)
+    );
+
+    try {
+      setIsSubmitting(true);
+      setMessage("Submitting project proposal...");
+
+      const response = await createTeacherProject(projectData);
+
+      console.log("Project created successfully:", response);
+
+      setMessage("Project proposal submitted successfully.");
+
+      setFormData({
+        projectTitle: "",
+        domain: "",
+        projectDescription: "",
+        specificFunctionalities: "",
+        technologies: "",
+        sdgGoals: [],
+      });
+
+      setIsSdgDropdownOpen(false);
+    } catch (error) {
+      console.error(
+        "Project proposal submission failed:",
+        error
+      );
+
+      setMessage(
+        error.message || "Failed to submit project proposal."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -96,7 +169,9 @@ function TeacherProjectProposal() {
         <form onSubmit={handleSubmit}>
           {/* Project Title */}
           <div className="form-group">
-            <label htmlFor="projectTitle">Project Title</label>
+            <label htmlFor="projectTitle">
+              Project Title
+            </label>
 
             <input
               type="text"
@@ -104,6 +179,23 @@ function TeacherProjectProposal() {
               value={formData.projectTitle}
               onChange={handleChange}
               placeholder="Enter project title"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* Domain */}
+          <div className="form-group">
+            <label htmlFor="domain">
+              Domain
+            </label>
+
+            <input
+              type="text"
+              id="domain"
+              value={formData.domain}
+              onChange={handleChange}
+              placeholder="e.g. Web Development, AI/ML, IoT"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -119,42 +211,47 @@ function TeacherProjectProposal() {
               value={formData.projectDescription}
               onChange={handleChange}
               placeholder="Describe the project and its objective"
+              disabled={isSubmitting}
             />
           </div>
 
-          {/* Specific Functionality */}
+          {/* Specific Functionalities */}
           <div className="form-group">
-            <label htmlFor="specificFunctionality">
-              Specific Functionality
+            <label htmlFor="specificFunctionalities">
+              Specific Functionalities
             </label>
 
             <textarea
-              id="specificFunctionality"
+              id="specificFunctionalities"
               rows="5"
-              value={formData.specificFunctionality}
+              value={formData.specificFunctionalities}
               onChange={handleChange}
-              placeholder="Describe the specific functionality expected in the project"
+              placeholder="e.g. Login, Dashboard, Project Tracking"
+              disabled={isSubmitting}
             />
           </div>
 
-          {/* Technology */}
+          {/* Technologies */}
           <div className="form-group">
-            <label htmlFor="technology">
+            <label htmlFor="technologies">
               Technology to be Used
             </label>
 
             <input
               type="text"
-              id="technology"
-              value={formData.technology}
+              id="technologies"
+              value={formData.technologies}
               onChange={handleChange}
               placeholder="e.g. React, Node.js, MongoDB"
+              disabled={isSubmitting}
             />
           </div>
 
           {/* SDG */}
           <div className="form-group">
-            <label>UN Sustainable Development Goals</label>
+            <label>
+              UN Sustainable Development Goals
+            </label>
 
             <div className="sdg-selector">
               <button
@@ -163,12 +260,15 @@ function TeacherProjectProposal() {
                 onClick={() =>
                   setIsSdgDropdownOpen(!isSdgDropdownOpen)
                 }
+                disabled={isSubmitting}
               >
                 <span>
-                  {formData.sdg.length === 0
+                  {formData.sdgGoals.length === 0
                     ? "Add SDG Goal"
-                    : `${formData.sdg.length} SDG${
-                        formData.sdg.length > 1 ? "s" : ""
+                    : `${formData.sdgGoals.length} SDG${
+                        formData.sdgGoals.length > 1
+                          ? "s"
+                          : ""
                       } added`}
                 </span>
 
@@ -182,20 +282,25 @@ function TeacherProjectProposal() {
                   {sdgOptions
                     .filter(
                       (option) =>
-                        !formData.sdg.includes(option.value)
+                        !formData.sdgGoals.includes(
+                          option.value
+                        )
                     )
                     .map((option) => (
                       <button
                         type="button"
                         className="sdg-dropdown-option"
                         key={option.value}
-                        onClick={() => addSdg(option.value)}
+                        onClick={() =>
+                          addSdg(option.value)
+                        }
                       >
                         {option.label}
                       </button>
                     ))}
 
-                  {formData.sdg.length === sdgOptions.length && (
+                  {formData.sdgGoals.length ===
+                    sdgOptions.length && (
                     <p className="sdg-all-selected">
                       All SDG goals have been added.
                     </p>
@@ -205,21 +310,30 @@ function TeacherProjectProposal() {
             </div>
 
             {/* Selected SDG Tags */}
-            {formData.sdg.length > 0 && (
+            {formData.sdgGoals.length > 0 && (
               <div className="sdg-selected-list">
-                {formData.sdg.map((value) => {
+                {formData.sdgGoals.map((value) => {
                   const selectedGoal = sdgOptions.find(
-                    (option) => option.value === value
+                    (option) =>
+                      option.value === value
                   );
 
                   return (
-                    <div className="sdg-tag" key={value}>
-                      <span>{selectedGoal.label}</span>
+                    <div
+                      className="sdg-tag"
+                      key={value}
+                    >
+                      <span>
+                        {selectedGoal.label}
+                      </span>
 
                       <button
                         type="button"
-                        onClick={() => removeSdg(value)}
+                        onClick={() =>
+                          removeSdg(value)
+                        }
                         aria-label={`Remove ${selectedGoal.label}`}
+                        disabled={isSubmitting}
                       >
                         ×
                       </button>
@@ -242,8 +356,11 @@ function TeacherProjectProposal() {
             <button
               type="submit"
               className="submit-proposal-btn"
+              disabled={isSubmitting}
             >
-              Submit Proposal
+              {isSubmitting
+                ? "Submitting..."
+                : "Submit Proposal"}
             </button>
           </div>
         </form>
