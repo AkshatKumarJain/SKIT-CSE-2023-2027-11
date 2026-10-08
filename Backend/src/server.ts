@@ -9,8 +9,6 @@ import cors from "cors";
 
 import { connectDB } from "./config/db";
 import { errorHandler } from "./middlewares/errorHandler";
-
-import userRouter from "./modules/users/user.route";
 import userRouter from "./modules/users/user.route";
 import studentRouter from "./modules/students/student.route";
 import teacherRouter from "./modules/teachers/teacher.route";

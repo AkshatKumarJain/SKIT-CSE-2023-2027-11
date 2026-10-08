@@ -84,20 +84,20 @@ class UserController {
             throw new AppError("Empty token", 400, ERROR_CODES.INVALID_TOKEN);
         }
 
-        const phoneNumber = req.body?.phoneNumber;
+        const phoneNo = req.body?.phoneNo;
         const file = req?.file
 
         
         console.log("req.body:", req.body);
         console.log("req.file:", req.file);
         
-        if (!phoneNumber && !req.file) {
+        if (!phoneNo && !req.file) {
           return res.status(200).json({
             message: "Nothing to update"
           });
         }
 
-        const updateProfile = await userService.updateUserProfile({ userId, phoneNumber, file });
+        const updateProfile = await userService.updateUserProfile({ userId, phoneNo, file });
         if(!updateProfile)
         {
             throw new AppError("Couldn't update profile", 500, ERROR_CODES.INTERNAL_SERVER_ERROR);

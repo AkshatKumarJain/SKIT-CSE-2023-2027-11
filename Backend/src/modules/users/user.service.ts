@@ -49,9 +49,9 @@ class UserService {
         if (!refreshToken) {
             throw new AppError("Refresh token is required", 400, "REFRESH_TOKEN_REQUIRED");
         }
- console.log("Refresh token received:", refreshToken);
-  const decoded = jwt.decode(refreshToken);
-    console.log("Decoded refresh token:", decoded);
+        console.log("Refresh token received:", refreshToken);
+        const decoded = jwt.decode(refreshToken);
+        console.log("Decoded refresh token:", decoded);
 
         const keys = await redisClient.keys("*");
         console.log("Redis keys:", keys);
@@ -148,7 +148,7 @@ class UserService {
         
         await findUser.save();
 
-         await this.logout(findUser._id.toString());
+        //  await this.logout(findUser._id.toString());
 
         // return {
         //     message: "Password reset successful. Please login again.",
@@ -156,9 +156,9 @@ class UserService {
         return true;
     }
 
-    async updateUserProfile({userId, phoneNumber, file}: IUpdateProfile) {
+    async updateUserProfile({userId, phoneNo, file}: IUpdateProfile) {
         const updatedData: any = {};
-        if(phoneNumber) updatedData.phoneNumber = phoneNumber;
+        if(phoneNo) updatedData.phoneNumber = phoneNo;
         
         if(file)
         {
