@@ -8,13 +8,15 @@ import { refreshAccessToken, clearAuthData } from "./authService";
 
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://noncasuistical-rolf-unurged.ngrok-free.dev";
+  "https://congested-coherent-calculate.ngrok-free.dev";
 
 // Route prefixes each backend module is mounted on.
 export const ENDPOINTS = {
   projects: "/api/projects",
   selections: "/api/project-selections",
   applications: "/api/applications",
+  studentProfile: "/api/student/me",
+  teacherProfile: "/api/teacher/me",
 };
 
 export class ApiError extends Error {
@@ -36,7 +38,9 @@ export async function apiFetch(path, options = {}, isRetry = false) {
       credentials: "include",
       ...options,
       headers: {
-        "Content-Type": "application/json",
+        ...(options.body instanceof FormData
+          ? {}
+          : { "Content-Type": "application/json" }),
         ...(accessToken
           ? { Authorization: `Bearer ${accessToken}` }
           : {}),
