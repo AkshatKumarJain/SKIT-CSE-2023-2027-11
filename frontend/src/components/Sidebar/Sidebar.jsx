@@ -27,16 +27,30 @@ function Sidebar({ role }) {
   const items = menuItems[role] || [];
 
   const handleNavigation = (item) => {
-    if (role === "teacher") {
-      if (item === "Dashboard") {
-        navigate("/teacher/dashboard");
-      }
-
-      if (item === "Project Proposals") {
-        navigate("/teacher/dashboard/project-proposals");
-      }
+  if (role === "student") {
+    if (item === "Dashboard") {
+      navigate("/student/dashboard");
     }
-  };
+
+    if (item === "Project Selection") {
+      navigate("/project-selection");
+    }
+
+    if (item === "My Team") {
+      navigate("/project-selection/team");
+    }
+  }
+
+  if (role === "teacher") {
+    if (item === "Dashboard") {
+      navigate("/teacher/dashboard");
+    }
+
+    if (item === "Project Proposals") {
+      navigate("/teacher/dashboard/project-proposals");
+    }
+  }
+};
 
   return (
     <aside className="sidebar">
