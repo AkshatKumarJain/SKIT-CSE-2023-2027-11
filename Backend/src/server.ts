@@ -15,7 +15,7 @@ import teacherRouter from "./modules/teachers/teacher.route";
 import projectRoute from "./modules/projects/project.route";
 import projectApplicationRoute from "./modules/projectApplications/projectApplication.route";
 import projectSelectionRoute from "./modules/projectSelections/projectSelection.route";
-
+import notificationRouter from "./modules/notifications/notification.route"
 
 import teamRoute from "./modules/teams/team.route";
 import teamRequestRoute from "./modules/teamRequests/teamRequest.route";
@@ -42,6 +42,7 @@ app.get("/health", (req, res) => {
     });
 });
 
+app.use("/api/notification", notificationRouter);
 app.use("/api/user/", userRouter);
 app.use("/api/projects/", projectRoute);
 app.use("/api/project-applications/", projectApplicationRoute);
