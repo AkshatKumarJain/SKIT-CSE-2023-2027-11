@@ -158,7 +158,7 @@ class UserService {
 
     async updateUserProfile({userId, phoneNo, file}: IUpdateProfile) {
         const updatedData: any = {};
-        if(phoneNo) updatedData.phoneNumber = phoneNo;
+        if(phoneNo) updatedData.phoneNo = phoneNo;
         
         if(file)
         {
@@ -173,7 +173,7 @@ class UserService {
 
         const updatedUserProfile = await userModel.findByIdAndUpdate(userId, 
             {$set: updatedData},
-            {new: true}
+            {returnDocument: "after"}
         );
 
         if(!updatedUserProfile)
