@@ -4,6 +4,7 @@
 
 .student-dashboard h1 {
   margin-bottom: 24px;
+  color: #0f2554;
 }
 
 .dashboard-card {
@@ -15,5 +16,127 @@
 }
 
 .dashboard-card h2 {
-  margin-bottom: 10px;
+  margin: 0 0 20px;
+  color: #0f2554;
+  font-size: 20px;
+}
+
+.project-details,
+.team-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 12px;
+  line-height: 1.5;
+}
+
+.detail-row strong {
+  min-width: 120px;
+  color: #334155;
+}
+
+.detail-row span {
+  color: #475569;
+}
+
+.status-badge {
+  display: inline-block;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background-color: #eff6ff;
+  color: #0f2554 !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.team-members {
+  margin-top: 12px;
+}
+
+.team-members h3 {
+  margin-bottom: 12px;
+  color: #334155;
+  font-size: 16px;
+}
+
+.team-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.team-member {
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #f8fafc;
+}
+
+.team-member div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.team-member strong {
+  color: #334155;
+}
+
+.team-member span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.dashboard-error {
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .student-dashboard {
+    width: 100%;
+  }
+
+  .dashboard-card {
+    padding: 20px;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .detail-row strong {
+    min-width: unset;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .student-dashboard h1 {
+    font-size: 24px;
+    margin-bottom: 18px;
+  }
+
+  .dashboard-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .dashboard-card h2 {
+    font-size: 18px;
+  }
+
+  .team-member {
+    padding: 10px 12px;
+  }
 }
