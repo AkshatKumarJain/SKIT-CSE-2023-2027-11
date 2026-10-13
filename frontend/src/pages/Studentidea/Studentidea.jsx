@@ -8,7 +8,7 @@ import { getProjectSelectionStage } from '../../services/projectSelectionService
 
 import { getFacultyMembers } from '../../services/facultyService'
 
-import { getMyTeam } from '../../services/teamService'
+import { checkSubmissionEligibility } from '../../services/eligibilityService'
 
 import {
   submitOwnIdea,
@@ -214,6 +214,7 @@ const pageTitle =
   const [team, setTeam] = useState(null)
   const [teamLoading, setTeamLoading] = useState(true)
   const [teamError, setTeamError] = useState('')
+  const [block, setBlock] = useState(null)
 
   const [projects, setProjects] = useState([])
   const [projectsLoading, setProjectsLoading] = useState(true)
@@ -277,10 +278,14 @@ const pageTitle =
   useEffect(() => {
     let isMounted = true
 
-    getMyTeam()
-      .then((data) => {
-        if (isMounted) {
-          setTeam(data)
+    checkSubmissionEligibility()
+      .then((result) => {
+        if (!isMounted) return
+
+        if (result.eligible) {
+          setTeam(result.team)
+        } else {
+          setBlock(result)
         }
       })
       .catch((error) => {
@@ -530,17 +535,13 @@ const pageTitle =
         </div>
 
         <div className="loading-state">
-          Checking your team status...
+          Checking your team and application status...
         </div>
       </div>
     )
   }
 
-  if (
-    teamError ||
-    !team ||
-    team.status !== 'COMPLETED'
-  ) {
+  if (teamError || block || !team) {
     return (
       <div>
         <div className="page-header">
@@ -553,26 +554,23 @@ const pageTitle =
           <div className="locked-state-title">
             {teamError
               ? 'Could not check your team status'
-              : !team
-                ? 'You need a team before you can propose a project'
-                : 'Your team is not marked complete yet'}
+              : block?.title}
           </div>
 
           <p className="locked-state-text">
-            {teamError ||
-              (!team
-                ? 'Create a team and invite your teammates on the Team Selection page first.'
-                : 'Finish inviting your teammates and mark the team as complete before submitting a proposal.')}
+            {teamError || block?.message}
           </p>
 
           <button
             type="button"
             className="btn btn-primary"
             onClick={() =>
-              navigate('/project-selection/team')
+              navigate(
+                block?.actionPath || '/project-selection'
+              )
             }
           >
-            Go to Team Selection
+            {block?.actionLabel || 'Back to Project Selection'}
           </button>
         </div>
       </div>
