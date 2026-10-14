@@ -3,6 +3,9 @@ import { setUserRole, clearUserRole } from "./auth";
 const API_BASE_URL =
   "https://noncasuistical-rolf-unurged.ngrok-free.dev";
 
+// Share one refresh request across api.js, logout, and other callers.
+let refreshPromise = null;
+
 export async function loginUser(email, password) {
   const response = await fetch(`${API_BASE_URL}/api/user/login`, {
     method: "POST",
@@ -28,11 +31,12 @@ export async function loginUser(email, password) {
     throw new Error("Access token not received.");
   }
 
-  localStorage.setItem("accessToken", accessToken);
-
-  if (refreshToken) {
-    localStorage.setItem("refreshToken", refreshToken);
+  if (!refreshToken) {
+    throw new Error("Refresh token not received.");
   }
+
+  localStorage.setItem("accessToken", accessToken);
+  localStorage.setItem("refreshToken", refreshToken);
 
   try {
     const payload = JSON.parse(atob(accessToken.split(".")[1]));
@@ -43,15 +47,28 @@ export async function loginUser(email, password) {
     }
 
     setUserRole(role);
-  } catch (error) {
-    clearUserRole();
+  } catch {
+    clearAuthData();
     throw new Error("Failed to read user role from access token.");
   }
 
   return data;
 }
 
-export async function refreshAccessToken() {
+export function refreshAccessToken() {
+  // If another request is already refreshing, reuse its promise.
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = performTokenRefresh().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+async function performTokenRefresh() {
   const refreshToken = localStorage.getItem("refreshToken");
 
   if (!refreshToken) {
@@ -71,7 +88,9 @@ export async function refreshAccessToken() {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || "Token refresh failed");
+    throw new Error(
+      data.message || data.error || "Token refresh failed"
+    );
   }
 
   const newAccessToken = data.newRefreshToken?.accessToken;
@@ -81,6 +100,7 @@ export async function refreshAccessToken() {
     throw new Error("New tokens not received.");
   }
 
+  // Save both tokens because the backend rotates the refresh token.
   localStorage.setItem("accessToken", newAccessToken);
   localStorage.setItem("refreshToken", newRefreshToken);
 
@@ -124,9 +144,7 @@ export async function logoutUser() {
     throw new Error(data.message || data.error || "Logout failed");
   }
 
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  clearUserRole();
+  clearAuthData();
 
   return data;
 }

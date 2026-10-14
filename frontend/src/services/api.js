@@ -1,8 +1,8 @@
-// Shared HTTP layer for every service that talks to the real backend.
+
+ // Shared HTTP layer for every service that talks to the real backend.
 //
 // Backend responses look like { success: true, data, message? }.
-// apiFetch unwraps `data` for callers and throws ApiError (with the backend's
-// message) on any non-2xx response, so pages only need try/catch.
+// apiFetch unwraps `data` for callers and throws ApiError on non-2xx responses.
 
 import { refreshAccessToken, clearAuthData } from "./authService";
 
@@ -27,8 +27,24 @@ export class ApiError extends Error {
   }
 }
 
+// Allow only one token refresh at a time for requests using apiFetch.
+let refreshPromise = null;
+
+function refreshAccessTokenOnce() {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
 export async function apiFetch(path, options = {}, isRetry = false) {
   const method = options.method || "GET";
+
+  // Read the token immediately before each request so retries use the
+  // latest access token saved by refreshAccessToken().
   const accessToken = localStorage.getItem("accessToken");
 
   let response;
@@ -54,20 +70,26 @@ export async function apiFetch(path, options = {}, isRetry = false) {
     );
   }
 
-  // If access token has expired, refresh it and retry the original request once.
-  if (response.status === 401 && !isRetry) {
+  // If the access token has expired, refresh it and retry the original
+  // request once. Some backend middleware may return 403 instead of 401.
+  if (
+    (response.status === 401 || response.status === 403) &&
+    !isRetry
+  ) {
     try {
-      await refreshAccessToken();
-
-      return apiFetch(path, options, true);
+      await refreshAccessTokenOnce();
     } catch {
       clearAuthData();
 
       throw new ApiError(
         "Your session has expired. Please log in again.",
-        401
+        response.status
       );
     }
+
+    // Keep retry errors separate from refresh errors. A failed retry
+    // should not automatically clear the user's authentication data.
+    return apiFetch(path, options, true);
   }
 
   // Read as text first so non-JSON error bodies can still be reported.
