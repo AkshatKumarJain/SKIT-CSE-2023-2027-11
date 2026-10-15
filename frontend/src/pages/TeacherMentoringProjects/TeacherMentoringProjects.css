@@ -1,0 +1,363 @@
+.teacher-mentoring-projects {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #1e293b;
+}
+
+.mentoring-projects-header {
+  margin-bottom: 24px;
+}
+
+.mentoring-projects-header h1 {
+  margin: 0 0 8px;
+  color: #0f2554;
+  font-size: 28px;
+}
+
+.mentoring-projects-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.mentoring-demo-notice {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.mentoring-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.mentoring-summary-card {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.mentoring-summary-card span {
+  display: block;
+  margin-bottom: 10px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.mentoring-summary-card strong {
+  color: #0f2554;
+  font-size: 28px;
+}
+
+.mentoring-projects-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mentoring-projects-toolbar input,
+.mentoring-projects-toolbar select {
+  min-height: 44px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  color: #334155;
+  font: inherit;
+}
+
+.mentoring-projects-toolbar input {
+  flex: 1;
+  min-width: 0;
+}
+
+.mentoring-projects-toolbar select {
+  width: 180px;
+  cursor: pointer;
+}
+
+.mentoring-projects-toolbar input:focus,
+.mentoring-projects-toolbar select:focus {
+  outline: 2px solid #0f2554;
+  outline-offset: 1px;
+}
+
+.mentoring-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.mentoring-project-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgb(15 37 84 / 4%);
+}
+
+.mentoring-project-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.mentoring-project-domain {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mentoring-project-status {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-in-progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.mentoring-project-card h2 {
+  margin: 0 0 12px;
+  color: #0f2554;
+  font-size: 19px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.mentoring-project-description {
+  margin: 0 0 20px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.mentoring-team-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.mentoring-team-details div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mentoring-team-details span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.mentoring-team-details strong {
+  color: #334155;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.mentoring-project-technologies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.mentoring-project-technologies span {
+  padding: 6px 9px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  color: #334155;
+  font-size: 12px;
+}
+
+.mentoring-projects-empty {
+  padding: 48px 20px;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.mentoring-projects-empty h2 {
+  margin: 0 0 8px;
+  color: #0f2554;
+  font-size: 20px;
+}
+
+.mentoring-projects-empty p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .mentoring-projects-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .mentoring-projects-header h1 {
+    font-size: 24px;
+  }
+
+  .mentoring-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .mentoring-summary-card {
+    padding: 16px;
+  }
+
+  .mentoring-projects-toolbar {
+    flex-direction: column;
+  }
+
+  .mentoring-projects-toolbar input,
+  .mentoring-projects-toolbar select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mentoring-project-card {
+    padding: 17px;
+  }
+}
+/* Loading and error states */
+.mentoring-projects-message,
+.mentoring-projects-error {
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.mentoring-projects-error {
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.mentoring-projects-error button {
+  margin-top: 8px;
+  padding: 9px 16px;
+  background: #0f2554;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Actual backend statuses */
+.status-faculty-review {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-unknown {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Team member list */
+.mentoring-team-members,
+.mentoring-project-history {
+  margin-top: 18px;
+}
+
+.mentoring-team-members h3,
+.mentoring-project-history h3 {
+  margin: 0 0 10px;
+  color: #0f2554;
+  font-size: 14px;
+}
+
+.mentoring-team-members ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mentoring-team-members li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+.mentoring-team-members li span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mentoring-team-members li small,
+.mentoring-history-item small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.mentoring-history-item {
+  padding: 12px 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.mentoring-history-item strong {
+  color: #334155;
+  font-size: 13px;
+}
+
+.mentoring-history-item p {
+  margin: 6px 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}

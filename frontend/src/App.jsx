@@ -20,6 +20,8 @@ import Profile from "./pages/Profile/Profile";
 import StudentDashboard from "./pages/StudentDashboard/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard/TeacherDashboard";
 import TeacherProjectProposal from "./pages/TeacherProjectProposal/TeacherProjectProposal";
+import TeacherProposedProjects from "./pages/TeacherProposedProjects/TeacherProposedProjects";
+import TeacherMentoringProjects from "./pages/TeacherMentoringProjects/TeacherMentoringProjects";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
 
 import ProjectSelection from "./pages/Projectselection/Projectselection";
@@ -160,9 +162,22 @@ function AppContent() {
             element={<TeacherDashboard />}
           />
 
+          {/* Submit a new project proposal */}
           <Route
             path="project-proposals"
             element={<TeacherProjectProposal />}
+          />
+
+          {/* View projects proposed by the faculty member */}
+          <Route
+            path="my-proposed-projects"
+            element={<TeacherProposedProjects />}
+          />
+
+          {/* View projects assigned to the faculty member for mentoring */}
+          <Route
+            path="my-mentoring-projects"
+            element={<TeacherMentoringProjects />}
           />
         </Route>
 
