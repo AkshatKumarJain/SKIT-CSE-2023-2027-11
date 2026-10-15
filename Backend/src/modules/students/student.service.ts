@@ -19,7 +19,7 @@ class studentService {
         const obj = {
             name: findUser.name, 
             email: findUser.email,
-            phoneNumber: findUser.phoneNo,
+            phoneNo: findUser.phoneNo,
             department: findUser.department,
             profilePhotoUrl: findUser.profilePhotoUrl,
             rollNumber: findStudent.rollNumber,

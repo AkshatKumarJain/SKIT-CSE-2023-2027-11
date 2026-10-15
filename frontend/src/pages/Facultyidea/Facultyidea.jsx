@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getFacultyProjects } from '../../services/facultyService'
 import { getProjectSelectionStage } from '../../services/projectSelectionService'
+import { checkSubmissionEligibility } from '../../services/eligibilityService'
 import './Facultyidea.css'
 
 function StatusPill({ status, label }) {
@@ -105,6 +106,8 @@ function FacultyIdea() {
   const [query, setQuery] = useState('')
   const [domain, setDomain] = useState('')
   const [activeProject, setActiveProject] = useState(null)
+  const [checking, setChecking] = useState(false)
+  const [block, setBlock] = useState(null)
 
   useEffect(() => {
     let isMounted = true
@@ -163,13 +166,46 @@ function FacultyIdea() {
     })
   }, [projects, query, domain])
 
-  function handleSelectProject(project) {
-    navigate('/project-selection/student-idea', {
-      state: {
-        source: 'faculty',
-        project
+  function openProject(project) {
+    setBlock(null)
+    setActiveProject(project)
+  }
+
+  function closeDrawer() {
+    setBlock(null)
+    setActiveProject(null)
+  }
+
+  async function handleSelectProject(project) {
+    setBlock(null)
+    setChecking(true)
+
+    try {
+      const result = await checkSubmissionEligibility()
+
+      if (!result.eligible) {
+        setBlock(result)
+        return
       }
-    })
+
+      navigate('/project-selection/student-idea', {
+        state: {
+          source: 'faculty',
+          project
+        }
+      })
+    } catch (error) {
+      setBlock({
+        title: 'Could not verify your eligibility',
+        message:
+          error.message ||
+          'Something went wrong while checking your team status. Please try again.',
+        actionLabel: null,
+        actionPath: null
+      })
+    } finally {
+      setChecking(false)
+    }
   }
 
   if (loading) {
@@ -271,9 +307,7 @@ function FacultyIdea() {
                 type="button"
                 key={project._id}
                 className="faculty-idea-card"
-                onClick={() =>
-                  setActiveProject(project)
-                }
+                onClick={() => openProject(project)}
               >
                 <div className="faculty-idea-card-top">
                   <span className="faculty-idea-card-domain">
@@ -326,7 +360,7 @@ function FacultyIdea() {
 
       <ProjectDrawer
         open={Boolean(activeProject)}
-        onClose={() => setActiveProject(null)}
+        onClose={closeDrawer}
         title={activeProject?.title}
         subtitle={
           activeProject
@@ -400,13 +434,35 @@ function FacultyIdea() {
               </div>
             </div>
 
+            {block ? (
+              <div className="eligibility-error">
+                <div className="eligibility-error-title">
+                  {block.title}
+                </div>
+
+                <p className="eligibility-error-text">
+                  {block.message}
+                </p>
+
+                {block.actionPath ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() =>
+                      navigate(block.actionPath)
+                    }
+                  >
+                    {block.actionLabel}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="drawer-actions">
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() =>
-                  setActiveProject(null)
-                }
+                onClick={closeDrawer}
               >
                 Close
               </button>
@@ -415,17 +471,20 @@ function FacultyIdea() {
                 type="button"
                 className="btn btn-primary"
                 disabled={
+                  checking ||
                   activeProject.visibilityStatus ===
-                  'RESERVED'
+                    'RESERVED'
                 }
                 onClick={() =>
                   handleSelectProject(activeProject)
                 }
               >
-                {activeProject.visibilityStatus ===
-                'RESERVED'
-                  ? 'Already Picked'
-                  : 'Select This Project'}
+                {checking
+                  ? 'Checking...'
+                  : activeProject.visibilityStatus ===
+                      'RESERVED'
+                    ? 'Already Picked'
+                    : 'Select This Project'}
               </button>
             </div>
           </>

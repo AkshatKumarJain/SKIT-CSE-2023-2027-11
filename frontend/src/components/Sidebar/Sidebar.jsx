@@ -1,8 +1,9 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./Sidebar.css";
 
 function Sidebar({ role }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems = {
     student: [
@@ -13,7 +14,9 @@ function Sidebar({ role }) {
 
     teacher: [
       "Dashboard",
-      "Project Proposals",
+      "Submit new Proposal",
+      "My Proposed Projects",
+      "Project Mentoring by Me",
     ],
 
     admin: [
@@ -24,33 +27,51 @@ function Sidebar({ role }) {
     ],
   };
 
+  const routes = {
+    student: {
+      Dashboard: "/student/dashboard",
+      "Project Selection": "/project-selection",
+      "My Team": "/project-selection/team",
+    },
+
+    teacher: {
+      Dashboard: "/teacher/dashboard",
+      "Submit new Proposal": "/teacher/dashboard/project-proposals",
+      "My Proposed Projects": "/teacher/dashboard/my-proposed-projects",
+      "Project Mentoring by Me": "/teacher/dashboard/my-mentoring-projects",
+    },
+
+    admin: {
+      Dashboard: "/admin/dashboard",
+    },
+  };
+
   const items = menuItems[role] || [];
 
   const handleNavigation = (item) => {
-  if (role === "student") {
+    const path = routes[role]?.[item];
+
+    if (path) {
+      navigate(path);
+    }
+  };
+
+  const isActive = (item) => {
+    const path = routes[role]?.[item];
+
+    if (!path) {
+      return false;
+    }
+
     if (item === "Dashboard") {
-      navigate("/student/dashboard");
+      return location.pathname === path;
     }
 
-    if (item === "Project Selection") {
-      navigate("/project-selection");
-    }
-
-    if (item === "My Team") {
-      navigate("/project-selection/team");
-    }
-  }
-
-  if (role === "teacher") {
-    if (item === "Dashboard") {
-      navigate("/teacher/dashboard");
-    }
-
-    if (item === "Project Proposals") {
-      navigate("/teacher/dashboard/project-proposals");
-    }
-  }
-};
+    return (
+      location.pathname === path ||
+      location.pathname.startsWith(`${path}/`)
+    );
+  };
 
   return (
     <aside className="sidebar">
@@ -63,7 +84,7 @@ function Sidebar({ role }) {
           {items.map((item) => (
             <button
               type="button"
-              className="sidebar-item"
+              className={`sidebar-item ${isActive(item) ? "active" : ""}`}
               key={item}
               onClick={() => handleNavigation(item)}
             >
