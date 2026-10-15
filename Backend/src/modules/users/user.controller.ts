@@ -108,6 +108,22 @@ class UserController {
         })
         
     }
+    async changePassword(req: Request, res: Response): Promise<Response> {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    const userId = req.user?.userId;
+
+    if (!userId) {
+        throw new AppError("Unauthorized", 401, ERROR_CODES.INVALID_CREDENTIALS);
+    }
+
+    await userService.changePassword(userId, currentPassword, newPassword, confirmPassword);
+
+    return res.status(200).json({
+        success: true,
+        message: "Password changed successfully. Please log in again."
+    });
+}
 }
 
 export = new UserController();

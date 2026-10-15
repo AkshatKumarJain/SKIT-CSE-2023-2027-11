@@ -14,5 +14,6 @@ router.post("/refresh", userController.refresh);
 router.post("/forgot-password", userController.forgotPassword);
 router.post("/reset-password", userController.resetPassword);
 router.put("/updateProfile", requireAuth, upload.single("file"), userController.updateUserProfile);
+router.patch("/change-password", requireAuth, userController.changePassword);
 
 export default router;
