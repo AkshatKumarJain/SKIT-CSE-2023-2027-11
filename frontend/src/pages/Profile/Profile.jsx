@@ -1,7 +1,10 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
-import { logoutUser } from "../../services/authService";
+
+import { logoutUser, clearAuthData } from "../../services/authService";
+import { changePassword } from "../../services/changePasswordService";
 import {
     getMyProfile,
     updateMyProfile,
@@ -20,6 +23,15 @@ function Profile({ onProfileUpdate }) {
     const [isEditingMobile, setIsEditingMobile] = useState(false);
     const [mobileNumber, setMobileNumber] = useState("");
     const [mobileError, setMobileError] = useState("");
+
+    // Change Password state
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+    const [passwordSuccess, setPasswordSuccess] = useState("");
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -101,8 +113,9 @@ function Profile({ onProfileUpdate }) {
             );
 
             setImagePreview(profile?.profilePhotoUrl || null);
-
             URL.revokeObjectURL(imageUrl);
+        } finally {
+            e.target.value = "";
         }
     };
 
@@ -150,12 +163,92 @@ function Profile({ onProfileUpdate }) {
         }
     };
 
+    const resetPasswordForm = () => {
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setPasswordError("");
+        setPasswordSuccess("");
+    };
+
+    const handleTogglePasswordForm = () => {
+        if (showPasswordForm) {
+            setShowPasswordForm(false);
+            resetPasswordForm();
+            return;
+        }
+
+        setPasswordError("");
+        setPasswordSuccess("");
+        setShowPasswordForm(true);
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+
+        setPasswordError("");
+        setPasswordSuccess("");
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            setPasswordError("Please fill in all password fields.");
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            setPasswordError(
+                "Your new password must contain at least 8 characters."
+            );
+            return;
+        }
+
+        if (newPassword === currentPassword) {
+            setPasswordError(
+                "Your new password must be different from your current password."
+            );
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setPasswordError("New password and confirmation do not match.");
+            return;
+        }
+
+        try {
+            setIsChangingPassword(true);
+
+            const result = await changePassword({
+                currentPassword,
+                newPassword,
+                confirmPassword,
+            });
+
+            setPasswordSuccess(
+                result?.message ||
+                    "Password changed successfully. Please log in again."
+            );
+
+            resetPasswordForm();
+            setShowPasswordForm(false);
+
+            // The backend says the user must log in again.
+            // Clear local tokens and return to login.
+            clearAuthData();
+            navigate("/login", { replace: true });
+        } catch (error) {
+            setPasswordError(
+                error.message || "Failed to change password. Please try again."
+            );
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
     const handleLogout = async () => {
         try {
             await logoutUser();
 
             console.log("Logout successful");
-            navigate("/login");
+            navigate("/login", { replace: true });
         } catch (error) {
             console.error("Logout failed:", error);
         }
@@ -230,9 +323,7 @@ function Profile({ onProfileUpdate }) {
                     />
 
                     {imageError && (
-                        <p className="image-error">
-                            {imageError}
-                        </p>
+                        <p className="image-error">{imageError}</p>
                     )}
                 </div>
 
@@ -284,8 +375,8 @@ function Profile({ onProfileUpdate }) {
                             {profile.rollNumber !== undefined
                                 ? "Student"
                                 : profile.specialization?.length
-                                ? profile.specialization.join(", ")
-                                : "—"}
+                                    ? profile.specialization.join(", ")
+                                    : "—"}
                         </p>
                     </div>
 
@@ -300,7 +391,7 @@ function Profile({ onProfileUpdate }) {
                                     onChange={(e) =>
                                         setMobileNumber(e.target.value)
                                     }
-                                    maxLength="10"
+                                    maxLength={10}
                                     placeholder="Enter mobile number"
                                 />
 
@@ -332,6 +423,114 @@ function Profile({ onProfileUpdate }) {
                     </div>
                 </div>
 
+                <section className="change-password-section">
+                    <div className="change-password-heading">
+                        <div>
+                            <h2>Security</h2>
+                            <p>Keep your account secure with a strong password.</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="password-toggle-button"
+                            onClick={handleTogglePasswordForm}
+                        >
+                            {showPasswordForm
+                                ? "Cancel"
+                                : "Change Password"}
+                        </button>
+                    </div>
+
+                    {passwordError && (
+                        <p className="password-error" role="alert">
+                            {passwordError}
+                        </p>
+                    )}
+
+                    {passwordSuccess && (
+                        <p className="password-success" role="status">
+                            {passwordSuccess}
+                        </p>
+                    )}
+
+                    {showPasswordForm && (
+                        <form
+                            className="change-password-form"
+                            onSubmit={handleChangePassword}
+                        >
+                            <div className="password-field">
+                                <label htmlFor="current-password">
+                                    Current Password
+                                </label>
+                                <input
+                                    id="current-password"
+                                    type="password"
+                                    autoComplete="current-password"
+                                    value={currentPassword}
+                                    onChange={(e) =>
+                                        setCurrentPassword(e.target.value)
+                                    }
+                                    placeholder="Enter current password"
+                                    required
+                                    disabled={isChangingPassword}
+                                />
+                            </div>
+
+                            <div className="password-field">
+                                <label htmlFor="new-password">
+                                    New Password
+                                </label>
+                                <input
+                                    id="new-password"
+                                    type="password"
+                                    autoComplete="new-password"
+                                    value={newPassword}
+                                    onChange={(e) =>
+                                        setNewPassword(e.target.value)
+                                    }
+                                    placeholder="Enter new password"
+                                    minLength={8}
+                                    required
+                                    disabled={isChangingPassword}
+                                />
+                                <small>
+                                    Use at least 8 characters. Any additional
+                                    password rules are enforced by the backend.
+                                </small>
+                            </div>
+
+                            <div className="password-field">
+                                <label htmlFor="confirm-password">
+                                    Confirm New Password
+                                </label>
+                                <input
+                                    id="confirm-password"
+                                    type="password"
+                                    autoComplete="new-password"
+                                    value={confirmPassword}
+                                    onChange={(e) =>
+                                        setConfirmPassword(e.target.value)
+                                    }
+                                    placeholder="Re-enter new password"
+                                    minLength={8}
+                                    required
+                                    disabled={isChangingPassword}
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="submit-password-button"
+                                disabled={isChangingPassword}
+                            >
+                                {isChangingPassword
+                                    ? "Changing Password..."
+                                    : "Update Password"}
+                            </button>
+                        </form>
+                    )}
+                </section>
+
                 <div className="profile-actions">
                     {!isEditingMobile && (
                         <button
@@ -341,7 +540,6 @@ function Profile({ onProfileUpdate }) {
                             Edit Mobile Number
                         </button>
                     )}
-
 
                     <button
                         type="button"
