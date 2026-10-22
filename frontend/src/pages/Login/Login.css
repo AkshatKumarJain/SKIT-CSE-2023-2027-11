@@ -1,3 +1,4 @@
+
 .login-page {
   min-height: calc(100vh - 72px);
   display: flex;
@@ -63,6 +64,46 @@
   border-color: #0f2554;
 }
 
+/* Password input and show/hide button */
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  padding-right: 46px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.password-toggle:hover {
+  color: #0f2554;
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid #0f2554;
+  outline-offset: 2px;
+}
+
+.password-toggle svg {
+  display: block;
+  flex-shrink: 0;
+}
+
 .login-button {
   width: 100%;
   padding: 12px;
@@ -77,6 +118,11 @@
 
 .login-button:hover {
   background-color: #0f2554;
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .login-error {
@@ -103,7 +149,6 @@
   text-decoration: underline;
 }
 
-
 /* Tablet */
 @media (max-width: 768px) {
   .login-page {
@@ -116,7 +161,6 @@
     padding: 32px;
   }
 }
-
 
 /* Mobile */
 @media (max-width: 480px) {
@@ -159,6 +203,14 @@
   .form-group input {
     padding: 11px 12px;
     font-size: 14px;
+  }
+
+  .password-input-wrapper input {
+    padding-right: 44px;
+  }
+
+  .password-toggle {
+    right: 8px;
   }
 
   .login-button {
