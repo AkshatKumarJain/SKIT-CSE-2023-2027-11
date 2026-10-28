@@ -1,3 +1,4 @@
+
 import { useLocation, useNavigate } from "react-router-dom";
 import "./Sidebar.css";
 
@@ -16,6 +17,7 @@ function Sidebar({ role }) {
       "Dashboard",
       "Submit new Proposal",
       "My Proposed Projects",
+      "Mentoring Requests",
       "Project Mentoring by Me",
     ],
 
@@ -38,6 +40,7 @@ function Sidebar({ role }) {
       Dashboard: "/teacher/dashboard",
       "Submit new Proposal": "/teacher/dashboard/project-proposals",
       "My Proposed Projects": "/teacher/dashboard/my-proposed-projects",
+      "Mentoring Requests": "/teacher/dashboard/mentoring-requests",
       "Project Mentoring by Me": "/teacher/dashboard/my-mentoring-projects",
     },
 
