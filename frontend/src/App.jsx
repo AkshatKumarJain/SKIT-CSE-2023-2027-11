@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -22,6 +23,7 @@ import TeacherDashboard from "./pages/TeacherDashboard/TeacherDashboard";
 import TeacherProjectProposal from "./pages/TeacherProjectProposal/TeacherProjectProposal";
 import TeacherProposedProjects from "./pages/TeacherProposedProjects/TeacherProposedProjects";
 import TeacherMentoringProjects from "./pages/TeacherMentoringProjects/TeacherMentoringProjects";
+import TeacherMentoringRequests from "./pages/TeacherMentoringRequests/TeacherMentoringRequests";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
 
 import ProjectSelection from "./pages/Projectselection/Projectselection";
@@ -178,6 +180,12 @@ function AppContent() {
           <Route
             path="my-mentoring-projects"
             element={<TeacherMentoringProjects />}
+          />
+
+          {/* Review mentoring requests */}
+          <Route
+            path="mentoring-requests"
+            element={<TeacherMentoringRequests />}
           />
         </Route>
 
