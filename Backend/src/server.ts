@@ -15,6 +15,8 @@ import teacherRouter from "./modules/teachers/teacher.route";
 import projectRoute from "./modules/projects/project.route";
 import projectApplicationRoute from "./modules/projectApplications/projectApplication.route";
 import projectSelectionRoute from "./modules/projectSelections/projectSelection.route";
+import facultyProjectRoute from "./modules/facultyProjects/facultyProject.route";
+
 import notificationRouter from "./modules/notifications/notification.route"
 
 import teamRoute from "./modules/teams/team.route";
@@ -50,6 +52,8 @@ app.use("/api/user/", userRouter);
 app.use("/api/projects/", projectRoute);
 app.use("/api/project-applications/", projectApplicationRoute);
 app.use("/api/project-selection/", projectSelectionRoute);
+app.use("/api/faculty-projects/", facultyProjectRoute);
+
 app.use("/api/student/", studentRouter);
 app.use("/api/teacher/", teacherRouter);
 
@@ -62,9 +66,7 @@ app.use(errorHandler);
 
 const startServer = async () => {
     try {
-        await connectDB();
 
-        await connectRedis();
 
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
@@ -72,6 +74,9 @@ const startServer = async () => {
     } catch (error) {
         console.error("Failed to start server:", error);
     }
+        await connectDB();
+
+        await connectRedis();    
 };
 
 startServer();
