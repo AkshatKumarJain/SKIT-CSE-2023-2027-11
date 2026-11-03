@@ -1,74 +1,149 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./TeacherMentoringRequests.css";
 
-const initialRequests = {
-  proposedProjects: [
-    {
-      id: 1,
-      projectTitle: "AI-Based Student Performance Prediction",
-      projectType: "Faculty Proposed Project",
-      studentName: "Rahul Sharma",
-      teamName: "Team Innovators",
-      members: 3,
-      submittedOn: "24 Oct 2026",
-      description:
-        "A machine learning system to analyze student performance and identify students who may need academic support.",
-      status: "Pending",
-      suggestion: "",
-    },
-    {
-      id: 2,
-      projectTitle: "Smart Campus Navigation",
-      projectType: "Faculty Proposed Project",
-      studentName: "Priya Singh",
-      teamName: "Tech Explorers",
-      members: 4,
-      submittedOn: "25 Oct 2026",
-      description:
-        "A web application that helps students navigate campus buildings and locate important facilities.",
-      status: "Pending",
-      suggestion: "",
-    },
-  ],
+import {
+  getProposedProjectMentoringRequests,
+  getAssignedMentoringRequests,
+  updateProposedProjectMentoringDecision,
+  updateAssignedMentoringDecision,
+} from "../../services/teacherMentoringRequestsService";
 
-  studentIdeas: [
-    {
-      id: 3,
-      projectTitle: "AI-Powered Career Guidance",
-      projectType: "Student Idea",
-      studentName: "Aman Verma",
-      teamName: "Future Builders",
-      members: 3,
-      submittedOn: "26 Oct 2026",
-      description:
-        "A platform that recommends career paths based on a student's skills, interests, and academic background.",
-      status: "Pending",
-      suggestion: "",
-    },
-    {
-      id: 4,
-      projectTitle: "College Event Management Portal",
-      projectType: "Project Bank",
-      studentName: "Neha Agarwal",
-      teamName: "Code Crafters",
-      members: 4,
-      submittedOn: "27 Oct 2026",
-      description:
-        "A centralized platform for managing college events, registrations, and event-related announcements.",
-      status: "Pending",
-      suggestion: "",
-    },
-  ],
+// Convert backend status values into readable UI labels.
+const formatStatus = (status) => {
+  const statusLabels = {
+    FACULTY_REVIEW: "Pending",
+    MENTOR_REVIEW: "Pending",
+    ADMIN_FINAL_REVIEW: "Under Admin Review",
+    APPROVED: "Approved",
+    REJECTED: "Rejected",
+  };
+
+  return (
+    statusLabels[status] ||
+    (status || "Unknown").replaceAll("_", " ")
+  );
+};
+
+// Format backend date into the existing UI date format.
+const formatDate = (date) => {
+  if (!date) return "—";
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return "—";
+
+  return parsedDate.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+// Get the latest comment from approval history.
+const getLatestSuggestion = (request) => {
+  const history = request.approvalHistory || [];
+
+  if (history.length > 0) {
+    return history[history.length - 1].comment || "";
+  }
+
+  return request.rejectionReason || "";
+};
+
+// Convert backend application into the format used by the existing UI.
+const mapApplication = (application, category) => {
+  const project = application.projectId || {};
+  const student = application.studentId || {};
+  const team = application.teamId || {};
+
+  const leader = team.leaderId || {};
+
+  const members = Array.isArray(team.memberIds)
+    ? team.memberIds.length
+    : 0;
+
+  const isFacultyProject = category === "proposedProjects";
+
+  return {
+    id: application._id,
+    projectTitle: project.title || "Untitled Project",
+
+    projectType: isFacultyProject
+      ? "Faculty Proposed Project"
+      : project.source === "PROJECT_BANK"
+        ? "Project Bank"
+        : "Student Idea",
+
+    studentName: student.name || leader.name || "—",
+
+    teamName: team.name || "—",
+
+    members: (team.leaderId ? 1 : 0) + members,
+
+    submittedOn: formatDate(application.submittedAt),
+
+    description: project.description || "No description available.",
+
+    status: formatStatus(application.status),
+
+    backendStatus: application.status,
+
+    suggestion: getLatestSuggestion(application),
+
+    category,
+  };
 };
 
 function TeacherMentoringRequests() {
-  const [requests, setRequests] = useState(initialRequests);
+  const [requests, setRequests] = useState({
+    proposedProjects: [],
+    studentIdeas: [],
+  });
+
   const [activeCategory, setActiveCategory] = useState("proposedProjects");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [decision, setDecision] = useState("");
   const [suggestion, setSuggestion] = useState("");
   const [error, setError] = useState("");
+
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch both categories when the page loads.
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setLoading(true);
+        setLoadError("");
+
+        const [facultyApplications, mentoringApplications] =
+          await Promise.all([
+            getProposedProjectMentoringRequests(),
+            getAssignedMentoringRequests(),
+          ]);
+
+        setRequests({
+          proposedProjects: facultyApplications.map((application) =>
+            mapApplication(application, "proposedProjects")
+          ),
+
+          studentIdeas: mentoringApplications.map((application) =>
+            mapApplication(application, "studentIdeas")
+          ),
+        });
+      } catch (err) {
+        setLoadError(
+          err.message || "Unable to load mentoring requests."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
 
   const allRequests = Object.values(requests).flat();
 
@@ -83,7 +158,8 @@ function TeacherMentoringRequests() {
     setError("");
   };
 
-  const handleDecisionSubmit = (event) => {
+  // Submit the decision to the appropriate backend API.
+  const handleDecisionSubmit = async (event) => {
     event.preventDefault();
 
     if (!suggestion.trim()) {
@@ -91,28 +167,67 @@ function TeacherMentoringRequests() {
       return;
     }
 
-    setRequests((previousRequests) => ({
-      ...previousRequests,
-      [selectedRequest.category]: previousRequests[
-        selectedRequest.category
-      ].map((request) =>
-        request.id === selectedRequest.id
-          ? {
-              ...request,
-              status: decision,
-              suggestion: suggestion.trim(),
-            }
-          : request
-      ),
-    }));
+    if (!selectedRequest || submitting) return;
 
-    setSelectedRequest(null);
-    setDecision("");
-    setSuggestion("");
-    setError("");
+    try {
+      setSubmitting(true);
+      setError("");
+
+      const approved = decision === "Accepted";
+
+      const updateFunction =
+        selectedRequest.category === "proposedProjects"
+          ? updateProposedProjectMentoringDecision
+          : updateAssignedMentoringDecision;
+
+      const response = await updateFunction(
+        selectedRequest.id,
+        approved,
+        suggestion.trim()
+      );
+
+      const returnedStatus =
+        response?.status ||
+        response?.data?.status ||
+        response?.application?.status;
+
+      const updatedStatus = returnedStatus
+        ? formatStatus(returnedStatus)
+        : approved
+          ? "Under Admin Review"
+          : "Rejected";
+
+      // Update the UI only after successful backend response.
+      setRequests((previousRequests) => ({
+        ...previousRequests,
+
+        [selectedRequest.category]: previousRequests[
+          selectedRequest.category
+        ].map((request) =>
+          request.id === selectedRequest.id
+            ? {
+                ...request,
+                status: updatedStatus,
+                backendStatus: returnedStatus || request.backendStatus,
+                suggestion: suggestion.trim(),
+              }
+            : request
+        ),
+      }));
+
+      closeDialog();
+    } catch (err) {
+      setError(
+        err.message || "Unable to submit your decision. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const closeDialog = () => {
+    if (submitting) return;
+
     setSelectedRequest(null);
     setDecision("");
     setSuggestion("");
@@ -174,6 +289,7 @@ function TeacherMentoringRequests() {
                 ? "Requests for My Proposed Projects"
                 : "Requests for Student Ideas / Project Bank"}
             </h2>
+
             <p>
               {currentRequests.length} request
               {currentRequests.length !== 1 ? "s" : ""}
@@ -181,7 +297,16 @@ function TeacherMentoringRequests() {
           </div>
         </div>
 
-        {currentRequests.length === 0 ? (
+        {loading ? (
+          <div className="mentoring-empty-state">
+            <p>Loading mentoring requests...</p>
+          </div>
+        ) : loadError ? (
+          <div className="mentoring-empty-state">
+            <h3>Unable to load requests</h3>
+            <p>{loadError}</p>
+          </div>
+        ) : currentRequests.length === 0 ? (
           <div className="mentoring-empty-state">
             <h3>No mentoring requests</h3>
             <p>
@@ -198,13 +323,16 @@ function TeacherMentoringRequests() {
                   </span>
 
                   <span
-                    className={`request-status status-${request.status.toLowerCase()}`}
+                    className={`request-status status-${request.status
+                      .toLowerCase()
+                      .replaceAll(" ", "-")}`}
                   >
                     {request.status}
                   </span>
                 </div>
 
                 <h3>{request.projectTitle}</h3>
+
                 <p className="request-description">
                   {request.description}
                 </p>
@@ -227,7 +355,7 @@ function TeacherMentoringRequests() {
                   <div>
                     <span className="detail-label">Team Members</span>
                     <span className="detail-value">
-                      {request.members}
+                      {request.members || "—"}
                     </span>
                   </div>
 
@@ -304,6 +432,7 @@ function TeacherMentoringRequests() {
               className="decision-dialog-close"
               aria-label="Close dialog"
               onClick={closeDialog}
+              disabled={submitting}
             >
               &times;
             </button>
@@ -333,6 +462,7 @@ function TeacherMentoringRequests() {
                 rows={5}
                 maxLength={1000}
                 required
+                disabled={submitting}
               />
 
               <div className="suggestion-character-count">
@@ -348,6 +478,7 @@ function TeacherMentoringRequests() {
                   type="button"
                   className="decision-cancel-button"
                   onClick={closeDialog}
+                  disabled={submitting}
                 >
                   Cancel
                 </button>
@@ -359,8 +490,11 @@ function TeacherMentoringRequests() {
                       ? "request-accept-button"
                       : "request-reject-button"
                   }
+                  disabled={submitting}
                 >
-                  Confirm {decision}
+                  {submitting
+                    ? "Submitting..."
+                    : `Confirm ${decision}`}
                 </button>
               </div>
             </form>
