@@ -316,7 +316,8 @@ class UserService {
         throw new AppError("New password must be different from the current password", 400, ERROR_CODES.INVALID_CREDENTIALS);
     }
 
-    user.password = await bcrypt.hash(newPassword, 12);
+    // user.password = await bcrypt.hash(newPassword, 12);
+    user.password = newPassword;
     await user.save();
 
     // Invalidate refresh-token sessions after changing the password.
