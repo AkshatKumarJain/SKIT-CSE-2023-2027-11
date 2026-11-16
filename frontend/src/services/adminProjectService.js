@@ -1,6 +1,6 @@
 import { apiFetch } from './api'
 
-const API_PREFIX = ''
+const API_PREFIX = '/api'
 
 function mapProject(raw) {
   return {

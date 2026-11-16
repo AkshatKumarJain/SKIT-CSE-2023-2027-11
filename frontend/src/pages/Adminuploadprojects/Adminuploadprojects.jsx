@@ -1,10 +1,9 @@
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import * as XLSX from 'xlsx'
-import {
-  createProjectBankProject,
-  getFacultyApprovers
-} from '../../services/adminProjectService'
+
+import { createProjectBankProject } from '../../services/adminProjectService'
 import './Adminuploadprojects.css'
 
 const MAX_ROWS = 200
@@ -56,13 +55,12 @@ const FIELD_ALIASES = {
     'techstack',
     'tools'
   ],
-  sdgGoals: ['sdggoals', 'sdggoal', 'alignedsdggoal', 'alignedsdggoals', 'sdg'],
-  facultyKey: [
-    'facultyemail',
-    'facultyapproveremail',
-    'approveremail',
-    'facultyapprover',
-    'faculty'
+  sdgGoals: [
+    'sdggoals',
+    'sdggoal',
+    'alignedsdggoal',
+    'alignedsdggoals',
+    'sdg'
   ]
 }
 
@@ -81,8 +79,11 @@ function mapRow(raw) {
 
   Object.keys(FIELD_ALIASES).forEach((field) => {
     const alias = FIELD_ALIASES[field].find(
-      (name) => lookup[name] !== undefined && String(lookup[name]).trim() !== ''
+      (name) =>
+        lookup[name] !== undefined &&
+        String(lookup[name]).trim() !== ''
     )
+
     mapped[field] = alias ? String(lookup[alias]) : ''
   })
 
@@ -123,10 +124,13 @@ function parseSdgGoals(value) {
 
   SDG_GOALS.forEach((goal) => {
     const name = goal.replace(/^\d+\.\s*/, '').toLowerCase()
+
     if (lowered.includes(name)) goals.push(goal)
   })
 
-  if (!goals.length) errors.push(`Could not recognise SDG goal "${text}"`)
+  if (!goals.length) {
+    errors.push(`Could not recognise SDG goal "${text}"`)
+  }
 
   return { goals, errors }
 }
@@ -137,7 +141,9 @@ export function parseSheetRows(rawRows) {
 
   rawRows.forEach((raw, index) => {
     const mapped = mapRow(raw)
-    const isEmpty = Object.values(mapped).every((value) => !value.trim())
+    const isEmpty = Object.values(mapped).every(
+      (value) => !value.trim()
+    )
 
     if (isEmpty) return
 
@@ -147,20 +153,30 @@ export function parseSheetRows(rawRows) {
     const title = mapped.title.trim()
     const domain = mapped.domain.trim()
     const description = mapped.description.trim()
+
     const specificFunctionalities = splitList(
       mapped.specificFunctionalities,
       /\r?\n|;/
     )
-    const technologies = splitList(mapped.technologies, /[,;\n]/)
+
+    const technologies = splitList(
+      mapped.technologies,
+      /[,;\n]/
+    )
+
     const sdg = parseSdgGoals(mapped.sdgGoals)
 
     if (!title) errors.push('Title is required')
     if (!domain) errors.push('Domain is required')
     if (!description) errors.push('Description is required')
+
     if (!specificFunctionalities.length) {
       errors.push('Specific functionalities are required')
     }
-    if (!technologies.length) errors.push('Technologies are required')
+
+    if (!technologies.length) {
+      errors.push('Technologies are required')
+    }
 
     errors.push(...sdg.errors)
 
@@ -168,7 +184,9 @@ export function parseSheetRows(rawRows) {
       const titleKey = title.toLowerCase()
 
       if (seenTitles.has(titleKey)) {
-        errors.push(`Duplicate title (also in row ${seenTitles.get(titleKey)})`)
+        errors.push(
+          `Duplicate title (also in row ${seenTitles.get(titleKey)})`
+        )
       } else {
         seenTitles.set(titleKey, rowNumber)
       }
@@ -182,36 +200,11 @@ export function parseSheetRows(rawRows) {
       specificFunctionalities,
       technologies,
       sdgGoals: sdg.goals,
-      facultyKey: mapped.facultyKey.trim(),
       errors
     })
   })
 
   return rows
-}
-
-function resolveApprover(key, faculty, defaultId) {
-  const term = key.trim().toLowerCase()
-
-  if (term) {
-    const match = faculty.find(
-      (member) =>
-        member.email.toLowerCase() === term ||
-        member.name.toLowerCase() === term
-    )
-
-    return match
-      ? { id: match.id, name: match.name }
-      : { error: `Faculty "${key}" was not found` }
-  }
-
-  const fallback = faculty.find((member) => member.id === defaultId)
-
-  if (fallback) return { id: fallback.id, name: fallback.name }
-
-  return {
-    error: 'No faculty approver - add a Faculty Email or choose a default approver'
-  }
 }
 
 function UploadIcon() {
@@ -245,33 +238,8 @@ function AdminUploadProjects() {
   const [parseError, setParseError] = useState('')
   const [parsing, setParsing] = useState(false)
   const [dragging, setDragging] = useState(false)
-  const [faculty, setFaculty] = useState([])
-  const [facultyLoading, setFacultyLoading] = useState(true)
-  const [facultyError, setFacultyError] = useState('')
-  const [defaultFacultyId, setDefaultFacultyId] = useState('')
   const [results, setResults] = useState({})
   const [importing, setImporting] = useState(false)
-
-  useEffect(() => {
-    let isMounted = true
-
-    getFacultyApprovers()
-      .then((list) => {
-        if (isMounted) setFaculty(list)
-      })
-      .catch((error) => {
-        if (isMounted) {
-          setFacultyError(error.message || 'Could not load faculty list')
-        }
-      })
-      .finally(() => {
-        if (isMounted) setFacultyLoading(false)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
 
   useEffect(() => {
     if (initialFile) loadFile(initialFile)
@@ -288,7 +256,9 @@ function AdminUploadProjects() {
     }
 
     if (file.size > MAX_FILE_BYTES) {
-      setParseError('This file is larger than 5 MB. Split it into smaller sheets.')
+      setParseError(
+        'This file is larger than 5 MB. Split it into smaller sheets.'
+      )
       return
     }
 
@@ -298,7 +268,12 @@ function AdminUploadProjects() {
       const buffer = await file.arrayBuffer()
       const workbook = XLSX.read(buffer, { type: 'array' })
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
-      const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false })
+
+      const rawRows = XLSX.utils.sheet_to_json(sheet, {
+        defval: '',
+        raw: false
+      })
+
       const rows = parseSheetRows(rawRows)
 
       if (!rows.length) {
@@ -318,7 +293,7 @@ function AdminUploadProjects() {
       setParsedRows(rows)
       setFileName(file.name)
       setResults({})
-    } catch (error) {
+    } catch {
       setParseError(
         'Could not read this file. Make sure it is a valid Excel sheet.'
       )
@@ -341,33 +316,35 @@ function AdminUploadProjects() {
   }
 
   const resolvedRows = useMemo(() => {
-    return parsedRows.map((row) => {
-      const errors = [...row.errors]
-      const approver = resolveApprover(row.facultyKey, faculty, defaultFacultyId)
-
-      if (approver.error) errors.push(approver.error)
-
-      return {
-        ...row,
-        errors,
-        facultyId: approver.id || '',
-        facultyName: approver.name || '',
-        valid: errors.length === 0
-      }
-    })
-  }, [parsedRows, faculty, defaultFacultyId])
+    return parsedRows.map((row) => ({
+      ...row,
+      valid: row.errors.length === 0
+    }))
+  }, [parsedRows])
 
   const validRows = resolvedRows.filter((row) => row.valid)
   const invalidCount = resolvedRows.length - validRows.length
+
   const resultValues = Object.values(results)
-  const doneCount = resultValues.filter((item) => item.status === 'done').length
-  const failedCount = resultValues.filter((item) => item.status === 'failed').length
+
+  const doneCount = resultValues.filter(
+    (item) => item.status === 'done'
+  ).length
+
+  const failedCount = resultValues.filter(
+    (item) => item.status === 'failed'
+  ).length
+
   const readyRows = validRows.filter(
     (row) => results[row.rowNumber]?.status !== 'done'
   )
+
   const progress = validRows.length
-    ? Math.round(((doneCount + failedCount) / validRows.length) * 100)
+    ? Math.round(
+        ((doneCount + failedCount) / validRows.length) * 100
+      )
     : 0
+
   const finished = !importing && doneCount + failedCount > 0
 
   async function runImport(rows) {
@@ -386,8 +363,7 @@ function AdminUploadProjects() {
           description: row.description,
           specificFunctionalities: row.specificFunctionalities,
           technologies: row.technologies,
-          sdgGoals: row.sdgGoals,
-          facultyId: row.facultyId
+          sdgGoals: row.sdgGoals
         })
 
         setResults((prev) => ({
@@ -479,11 +455,17 @@ function AdminUploadProjects() {
         </div>
       </div>
 
-      {parseError ? <div className="form-error">{parseError}</div> : null}
+      {parseError ? (
+        <div className="form-error">{parseError}</div>
+      ) : null}
 
       {!parsedRows.length ? (
         <div
-          className={dragging ? 'admin-dropzone large dragging' : 'admin-dropzone large'}
+          className={
+            dragging
+              ? 'admin-dropzone large dragging'
+              : 'admin-dropzone large'
+          }
           onDragOver={(event) => {
             event.preventDefault()
             setDragging(true)
@@ -534,8 +516,8 @@ function AdminUploadProjects() {
               <div className="upload-file-name">{fileName}</div>
 
               <div className="upload-file-meta">
-                {resolvedRows.length} row{resolvedRows.length === 1 ? '' : 's'}{' '}
-                found
+                {resolvedRows.length} row
+                {resolvedRows.length === 1 ? '' : 's'} found
               </div>
             </div>
 
@@ -551,22 +533,30 @@ function AdminUploadProjects() {
 
           <div className="upload-summary">
             <div className="upload-summary-stat">
-              <div className="upload-summary-value">{resolvedRows.length}</div>
+              <div className="upload-summary-value">
+                {resolvedRows.length}
+              </div>
               <div className="upload-summary-label">Total Rows</div>
             </div>
 
             <div className="upload-summary-stat">
-              <div className="upload-summary-value ok">{validRows.length}</div>
+              <div className="upload-summary-value ok">
+                {validRows.length}
+              </div>
               <div className="upload-summary-label">Ready to Import</div>
             </div>
 
             <div className="upload-summary-stat">
-              <div className="upload-summary-value bad">{invalidCount}</div>
+              <div className="upload-summary-value bad">
+                {invalidCount}
+              </div>
               <div className="upload-summary-label">Need Fixing</div>
             </div>
 
             <div className="upload-summary-stat">
-              <div className="upload-summary-value ok">{doneCount}</div>
+              <div className="upload-summary-value ok">
+                {doneCount}
+              </div>
               <div className="upload-summary-label">Imported</div>
             </div>
           </div>
@@ -574,34 +564,14 @@ function AdminUploadProjects() {
           <div className="upload-approver">
             <div>
               <div className="upload-approver-title">
-                Default Faculty Approver
+                Faculty Assignment
               </div>
-
               <div className="upload-approver-text">
-                Used for rows that have no Faculty Email column value. Rows
-                with a Faculty Email use that faculty member instead.
+                Faculty assignment is not required. Uploaded projects
+                will be added to the Project Bank without a mentor.
               </div>
             </div>
-
-            <select
-              className="field-select upload-approver-select"
-              value={defaultFacultyId}
-              disabled={facultyLoading || importing}
-              onChange={(event) => setDefaultFacultyId(event.target.value)}
-            >
-              <option value="">
-                {facultyLoading ? 'Loading faculty...' : 'No default approver'}
-              </option>
-
-              {faculty.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name} ({member.email})
-                </option>
-              ))}
-            </select>
           </div>
-
-          {facultyError ? <div className="form-error">{facultyError}</div> : null}
 
           {importing || finished ? (
             <div className="upload-progress">
@@ -629,7 +599,6 @@ function AdminUploadProjects() {
                   <th>Domain</th>
                   <th>Technologies</th>
                   <th>SDG Goals</th>
-                  <th>Faculty Approver</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -637,9 +606,13 @@ function AdminUploadProjects() {
               <tbody>
                 {resolvedRows.map((row) => (
                   <tr key={row.rowNumber}>
-                    <td className="admin-table-index">{row.rowNumber}</td>
+                    <td className="admin-table-index">
+                      {row.rowNumber}
+                    </td>
 
-                    <td className="admin-table-title">{row.title || '-'}</td>
+                    <td className="admin-table-title">
+                      {row.title || '-'}
+                    </td>
 
                     <td>
                       {row.domain ? (
@@ -652,8 +625,6 @@ function AdminUploadProjects() {
                     <td>{row.technologies.join(', ') || '-'}</td>
 
                     <td>{row.sdgGoals.join(', ') || '-'}</td>
-
-                    <td>{row.facultyName || '-'}</td>
 
                     <td>{renderStatus(row)}</td>
                   </tr>
@@ -669,8 +640,8 @@ function AdminUploadProjects() {
               </div>
             ) : (
               <p className="section-subtext">
-                Rows that need fixing are skipped. Correct them in your sheet
-                and upload again.
+                Rows that need fixing are skipped. Correct them in your
+                sheet and upload again.
               </p>
             )}
 
@@ -688,7 +659,7 @@ function AdminUploadProjects() {
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={importing || facultyLoading || !readyRows.length}
+                disabled={importing || !readyRows.length}
                 onClick={() => runImport(readyRows)}
               >
                 {importing
