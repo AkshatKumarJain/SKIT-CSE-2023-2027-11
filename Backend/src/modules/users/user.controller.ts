@@ -6,6 +6,30 @@ import { ERROR_CODES } from "../../errors/errorCodes";
 import userModel from "./user.model";
 
 class UserController {
+
+    async createUser(req: Request, res: Response): Promise<Response> {
+        const {name, email, password, role, department, semester, rollNumber, isTeamLeader, designation, specialization, skills, isMentor, isLabFaculty }: any = req.body;
+        if (!name || !email || !password || !role || !department) {
+            throw new AppError("All fields are required!", 403, "")
+        }
+        
+        // check if the password lenght is of atleast 6 characters.
+        if (password.length < 6) {
+            throw new AppError("Password length must be of atleast 6 characters.", 403, "")
+        }
+        
+        // check if the length of password exceed 15 characters.
+        if (password.length > 15) {
+            throw new AppError("Password length cannot exceed 15 characters.", 403, "")
+        }
+
+        const createdUser = await userService.createUser(req.body);
+        return res.status(201).json({
+            message: "User created successfully",
+            data: createdUser
+        })
+
+    }
     async login(req: Request, res: Response): Promise<Response> {
         const {email, password} = req.body;
         if(!email || !password)
@@ -108,6 +132,22 @@ class UserController {
         })
         
     }
+    async changePassword(req: Request, res: Response): Promise<Response> {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    const userId = req.user?.userId;
+
+    if (!userId) {
+        throw new AppError("Unauthorized", 401, ERROR_CODES.INVALID_CREDENTIALS);
+    }
+
+    await userService.changePassword(userId, currentPassword, newPassword, confirmPassword);
+
+    return res.status(200).json({
+        success: true,
+        message: "Password changed successfully. Please log in again."
+    });
+}
 }
 
 export = new UserController();

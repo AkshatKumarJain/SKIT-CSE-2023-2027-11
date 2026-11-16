@@ -4,64 +4,58 @@ import { AppError } from "../../errors/AppError";
 import { ERROR_CODES } from "../../errors/errorCodes";
 import { SELECTION_PHASES, SelectionPhase } from "./projectSelection.type";
 
+// Date-only values (YYYY-MM-DD) are interpreted in this timezone.
+// Start = 00:00:00.000 of that day, end = 23:59:59.999 of that day,
+// so the end date is inclusive for the whole day.
+
+const SELECTION_TZ_OFFSET = "+05:30"; // IST
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+type DateInput = string | Date | null | undefined;
+
 const fail = (message: string, status: number, code: string): never => {
   throw new AppError(message, status, code);
 };
 
 class ProjectSelectionService {
-  private validateDates(
-    startDate: string | Date | undefined,
-    endDate: string | Date | undefined,
+  private parseDate(
+    value: DateInput,
+    boundary: "start" | "end",
+  ): Date | undefined {
+    if (value === undefined || value === null || value === "") return undefined;
+    if (value instanceof Date) return value;
+    if (DATE_ONLY.test(value)) {
+      const time = boundary === "start" ? "00:00:00.000" : "23:59:59.999";
+      return new Date(`${value}T${time}${SELECTION_TZ_OFFSET}`);
+    }
+    return new Date(value);
+  }
+
+  // Resolves and validates a start/end pair. Missing values fall back to the
+  // existing window (update) or are rejected (create).
+  
+  private resolveWindow(
+    startDate: DateInput,
+    endDate: DateInput,
+    current?: { startDate: Date; endDate: Date },
   ) {
-    const rawStart = startDate;
-    const rawEnd = endDate;
-    if (!rawStart || !rawEnd)
+    const start = this.parseDate(startDate, "start") ?? current?.startDate;
+    const end = this.parseDate(endDate, "end") ?? current?.endDate;
+    if (!start || !end)
       fail(
         "startDate and endDate are required",
         400,
         ERROR_CODES.VALIDATION_ERROR,
       );
-    const start = new Date(rawStart!);
-    const end = new Date(rawEnd!);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
+    if (Number.isNaN(start!.getTime()) || Number.isNaN(end!.getTime()))
       fail("Invalid selection dates", 400, ERROR_CODES.VALIDATION_ERROR);
-    if (start >= end)
+    if (end! < start!)
       fail(
-        "End date must be after start date",
+        "End date cannot be before start date",
         400,
         ERROR_CODES.VALIDATION_ERROR,
       );
-    return { start, end };
-  }
-
-  private async ensureNoOverlap(
-    phase: SelectionPhase,
-    start: Date,
-    end: Date,
-    excludeId?: string,
-  ) {
-    const filter: {
-      _id?: { $ne: string };
-      isActive: true;
-      startDate: { $lt: Date };
-      endDate: { $gt: Date };
-    } = {
-      isActive: true,
-      startDate: { $lt: end },
-      endDate: { $gt: start },
-    };
-    if (excludeId) {
-      if (!mongoose.isValidObjectId(excludeId))
-        fail("Invalid selection phase id", 400, ERROR_CODES.VALIDATION_ERROR);
-      filter._id = { $ne: excludeId };
-    }
-    const overlap = await projectSelectionModel.findOne(filter);
-    if (overlap && overlap.phase !== phase)
-      fail(
-        "Selection phases cannot overlap",
-        409,
-        ERROR_CODES.VALIDATION_ERROR,
-      );
+    return { start: start!, end: end! };
   }
 
   async createPhase(data: {
@@ -78,17 +72,17 @@ class ProjectSelectionService {
         400,
         ERROR_CODES.VALIDATION_ERROR,
       );
+    if (data.isActive !== undefined && typeof data.isActive !== "boolean")
+      fail("isActive must be a boolean", 400, ERROR_CODES.VALIDATION_ERROR);
     const existing = await projectSelectionModel.findOne({ phase: phase! });
     if (existing)
       fail("Selection phase already exists", 409, ERROR_CODES.VALIDATION_ERROR);
-    const { start, end } = this.validateDates(data.startDate, data.endDate);
-    const isActive = data.isActive ?? true;
-    if (isActive) await this.ensureNoOverlap(phase!, start, end);
+    const { start, end } = this.resolveWindow(data.startDate, data.endDate);
     return projectSelectionModel.create({
       phase: phase!,
       startDate: start,
       endDate: end,
-      isActive,
+      isActive: data.isActive ?? true,
     });
   }
 
@@ -102,21 +96,20 @@ class ProjectSelectionService {
     }));
   }
 
+  // Each phase is reported independently, so several can be open at once.
+
   async getCurrentPhase() {
     const now = new Date();
-    const phases = await projectSelectionModel
-      .find({
-        isActive: true,
-        startDate: { $lte: now },
-        endDate: { $gte: now },
-      })
-      .sort({ startDate: 1 });
-    const current = phases[0];
+    const open = await projectSelectionModel.find({
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    });
+    const openPhases = new Set<SelectionPhase>(open.map((p) => p.phase));
     return {
-      currentPhase: current?.phase ?? null,
-      ownIdea: current?.phase === "OWN_IDEA",
-      facultyProjects: current?.phase === "FACULTY_PROJECT",
-      projectBank: current?.phase === "PROJECT_BANK",
+      ownIdea: openPhases.has("OWN_IDEA"),
+      facultyProjects: openPhases.has("FACULTY_PROJECT"),
+      projectBank: openPhases.has("PROJECT_BANK"),
     };
   }
 
@@ -130,32 +123,46 @@ class ProjectSelectionService {
       startDate?: string | Date;
       endDate?: string | Date;
       isActive?: boolean;
+      confirmShorten?: boolean;
     },
   ) {
     if (!mongoose.isValidObjectId(phaseId))
       fail("Invalid selection phase id", 400, ERROR_CODES.VALIDATION_ERROR);
+    if (data.isActive !== undefined && typeof data.isActive !== "boolean")
+      fail("isActive must be a boolean", 400, ERROR_CODES.VALIDATION_ERROR);
     const phase = await projectSelectionModel.findById(phaseId);
     if (!phase) fail("Selection phase not found", 404, ERROR_CODES.NOT_FOUND);
     const validPhase = phase!;
-    const start =
-      data.startDate === undefined || data.startDate === null
-        ? validPhase.startDate
-        : new Date(data.startDate);
-    const end =
-      data.endDate === undefined || data.endDate === null
-        ? validPhase.endDate
-        : new Date(data.endDate);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
-      fail("Invalid selection dates", 400, ERROR_CODES.VALIDATION_ERROR);
-    if (start >= end)
+
+    const { start, end } = this.resolveWindow(
+      data.startDate,
+      data.endDate,
+      validPhase,
+    );
+    const isActive = data.isActive ?? validPhase.isActive;
+
+    // Shortening a window that is open right now can cut students off,
+    // so the admin must explicitly confirm it.
+
+    const now = new Date();
+    const wasOpen =
+      validPhase.isActive &&
+      validPhase.startDate <= now &&
+      validPhase.endDate >= now;
+    if (
+      wasOpen &&
+      isActive &&
+      end < validPhase.endDate &&
+      data.confirmShorten !== true
+    )
       fail(
-        "End date must be after start date",
-        400,
+        "Shortening an open selection window requires confirmation (confirmShorten: true)",
+        409,
         ERROR_CODES.VALIDATION_ERROR,
       );
-    const isActive = data.isActive ?? validPhase.isActive;
-    if (isActive)
-      await this.ensureNoOverlap(validPhase.phase, start, end, phaseId);
+
+    // Only this phase's record is touched; applications are not modified.
+    
     validPhase.startDate = start;
     validPhase.endDate = end;
     validPhase.isActive = isActive;

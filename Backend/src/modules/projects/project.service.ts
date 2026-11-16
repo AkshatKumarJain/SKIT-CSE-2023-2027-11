@@ -11,6 +11,7 @@ type ListInput = string[] | string | undefined;
 
 // Accepts an array of strings or a comma/newline separated string and returns a
 // clean string[]; undefined means "not provided".
+
 const cleanList = (value: unknown): string[] | undefined => {
   if (value === undefined || value === null) return undefined;
   const items = Array.isArray(value)
@@ -93,9 +94,11 @@ class ProjectService {
     const sdgGoals = cleanList(data.sdgGoals);
     const technologies = cleanList(data.technologies);
     const maxTeamSize = cleanTeamSize(data.maxTeamSize);
+
     // Faculty project: the creating faculty is the approver.
     // Project Bank project: admin does not pick a faculty; the student picks a
     // mentor when applying, so facultyId stays null.
+
     const facultyId: string | null =
       source === "FACULTY_PROJECT" ? userId : null;
 
@@ -116,6 +119,7 @@ class ProjectService {
 
   // Admin uploads many Project Bank projects at once (rows parsed from an Excel
   // sheet). All-or-nothing: if any row is invalid nothing is inserted.
+  
   async createProjectsBulk(
     userId: string,
     role: string | undefined,
@@ -248,8 +252,10 @@ class ProjectService {
         409,
         ERROR_CODES.PROJECT_ALREADY_ALLOCATED,
       );
+
     // Whitelist: never let the request body change source, visibilityStatus,
     // createdBy or facultyId (the old Object.assign allowed all of them).
+
     for (const field of ["title", "domain", "description"] as const) {
       const value = data[field];
       if (value === undefined) continue;
