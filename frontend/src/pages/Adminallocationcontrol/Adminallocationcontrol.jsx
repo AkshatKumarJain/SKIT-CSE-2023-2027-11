@@ -98,6 +98,25 @@ function addDays(value, days) {
   return date
 }
 
+function resolveDialogDates(dialog) {
+  const startUnchanged =
+    dialog.originalStart &&
+    dialog.start === toLocalInput(dialog.originalStart)
+  const endUnchanged =
+    dialog.originalEnd && dialog.end === toLocalInput(dialog.originalEnd)
+
+  let start = new Date(dialog.start)
+
+  if (dialog.startNow) start = new Date()
+  else if (startUnchanged) start = new Date(dialog.originalStart)
+
+  const end = endUnchanged
+    ? new Date(dialog.originalEnd)
+    : new Date(dialog.end)
+
+  return { start, end }
+}
+
 function formatDateTime(value) {
   return new Date(value).toLocaleString('en-IN', {
     day: 'numeric',
@@ -278,22 +297,36 @@ function AdminAllocationControl() {
       title: card.meta.title,
       windowId: card.window ? card.window.id : null,
       start: toLocalInput(start),
-      end: toLocalInput(end)
+      end: toLocalInput(end),
+      startNow: !keepDates,
+      originalStart: keepDates ? card.window.startDate : null,
+      originalEnd: keepDates ? card.window.endDate : null
     })
   }
 
   function setQuickDuration(days) {
-    const start = new Date(dialog.start)
+    const { start } = resolveDialogDates(dialog)
     const base = Number.isNaN(start.getTime()) ? new Date() : start
-    setDialog({ ...dialog, end: toLocalInput(addDays(base, days)) })
+    setDialog({
+      ...dialog,
+      end: toLocalInput(addDays(base, days)),
+      originalEnd: null
+    })
+  }
+
+  function setStartNow() {
+    setDialog({
+      ...dialog,
+      start: toLocalInput(new Date()),
+      startNow: true
+    })
   }
 
   async function submitDialog(event) {
     event.preventDefault()
     setDialogError('')
 
-    const start = new Date(dialog.start)
-    const end = new Date(dialog.end)
+    const { start, end } = resolveDialogDates(dialog)
 
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
       setDialogError('Choose both a start and an end date and time.')
@@ -596,10 +629,22 @@ function AdminAllocationControl() {
                   className="field-input"
                   value={dialog.start}
                   onChange={(event) =>
-                    setDialog({ ...dialog, start: event.target.value })
+                    setDialog({
+                      ...dialog,
+                      start: event.target.value,
+                      startNow: false
+                    })
                   }
                   required
                 />
+
+                <button
+                  type="button"
+                  className="alloc-link"
+                  onClick={setStartNow}
+                >
+                  Start now
+                </button>
               </div>
 
               <div className="field-group">

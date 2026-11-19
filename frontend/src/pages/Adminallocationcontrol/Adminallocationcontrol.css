@@ -774,6 +774,21 @@ input, select, textarea {
   gap: 14px;
 }
 
+.alloc-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.alloc-link:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
 .alloc-quick {
   display: flex;
   flex-wrap: wrap;
