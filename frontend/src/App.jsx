@@ -32,6 +32,11 @@ import FacultyIdea from "./pages/Facultyidea/Facultyidea";
 import ProjectBank from "./pages/Projectbank/Projectbank";
 import TeamSelection from "./pages/TeamSelection/TeamSelection";
 
+// Admin Project Bank Pages
+import AdminProjectBank from "./pages/Adminprojectbank/Adminprojectbank";
+import AdminAddProject from "./pages/Adminaddproject/Adminaddproject";
+import AdminUploadProjects from "./pages/Adminuploadprojects/Adminuploadprojects";
+
 import "./pages/Projectselection/Projectselection.css";
 
 function AppContent() {
@@ -186,6 +191,31 @@ function AppContent() {
           <Route
             path="mentoring-requests"
             element={<TeacherMentoringRequests />}
+          />
+        </Route>
+
+        {/* Admin Project Bank */}
+        <Route
+          path="/admin/project-bank"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <DashboardLayout role="admin" />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={<AdminProjectBank />}
+          />
+
+          <Route
+            path="add"
+            element={<AdminAddProject />}
+          />
+
+          <Route
+            path="upload"
+            element={<AdminUploadProjects />}
           />
         </Route>
 

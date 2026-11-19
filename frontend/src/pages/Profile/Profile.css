@@ -37,6 +37,9 @@
 
 .profile-picture {
     object-fit: cover;
+    object-position: center;
+    display: block;
+    border: 3px solid #e2e8f0;
 }
 
 .profile-initial {
@@ -171,10 +174,11 @@
 }
 
 .image-error {
-    margin: 5px 0 0;
+    margin: 8px 0 0;
     color: #dc2626;
     font-size: 13px;
     text-align: center;
+    line-height: 1.5;
 }
 
 /* Change Password section */
@@ -297,6 +301,104 @@
     cursor: not-allowed;
 }
 
+/* Image crop modal */
+
+.crop-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.7);
+    overflow-y: auto;
+}
+
+.crop-modal {
+    width: 100%;
+    max-width: 500px;
+    padding: 25px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+}
+
+.crop-modal h2 {
+    margin: 0 0 8px;
+    color: #0f2554;
+    font-size: 22px;
+}
+
+.crop-modal > p {
+    margin: 0 0 20px;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.crop-container {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    background: #1e293b;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.crop-zoom-control {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.crop-zoom-control label {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.crop-zoom-control input {
+    width: 100%;
+    accent-color: #0f2554;
+    cursor: pointer;
+}
+
+.crop-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.crop-modal-actions button {
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.crop-cancel-button {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.crop-save-button {
+    background: #0f2554;
+    color: white;
+}
+
+.crop-save-button:hover:not(:disabled) {
+    background: #091a3d;
+}
+
+.crop-modal-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 @media (max-width: 650px) {
     .profile-page {
         padding: 24px 12px;
@@ -332,6 +434,24 @@
     }
 
     .submit-password-button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 500px) {
+    .crop-modal {
+        padding: 18px;
+    }
+
+    .crop-container {
+        height: 280px;
+    }
+
+    .crop-modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .crop-modal-actions button {
         width: 100%;
     }
 }

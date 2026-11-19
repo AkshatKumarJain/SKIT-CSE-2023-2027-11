@@ -1,5 +1,5 @@
 
- // Shared HTTP layer for every service that talks to the real backend.
+// Shared HTTP layer for every service that talks to the real backend.
 //
 // Backend responses look like { success: true, data, message? }.
 // apiFetch unwraps `data` for callers and throws ApiError on non-2xx responses.
@@ -57,9 +57,14 @@ export async function apiFetch(path, options = {}, isRetry = false) {
         ...(options.body instanceof FormData
           ? {}
           : { "Content-Type": "application/json" }),
+
+        // Bypass the ngrok browser warning page.
+        "ngrok-skip-browser-warning": "true",
+
         ...(accessToken
           ? { Authorization: `Bearer ${accessToken}` }
           : {}),
+
         ...options.headers,
       },
     });

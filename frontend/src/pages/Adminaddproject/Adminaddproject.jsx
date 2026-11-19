@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react'
+
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  createProjectBankProject,
-  getFacultyApprovers
-} from '../../services/adminProjectService'
+import { createProjectBankProject } from '../../services/adminProjectService'
 import './Adminaddproject.css'
 
 const DOMAIN_SUGGESTIONS = [
@@ -45,15 +43,6 @@ const EMPTY_FORM = {
   technologies: ''
 }
 
-function initials(name) {
-  return name
-    .replace('Dr. ', '')
-    .replace('Prof. ', '')
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-}
-
 function splitLines(value) {
   return value
     .split('\n')
@@ -73,35 +62,9 @@ function AdminAddProject() {
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [sdgGoals, setSdgGoals] = useState([])
-  const [facultyId, setFacultyId] = useState('')
-  const [faculty, setFaculty] = useState([])
-  const [facultyLoading, setFacultyLoading] = useState(true)
-  const [facultyError, setFacultyError] = useState('')
-  const [facultyQuery, setFacultyQuery] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [createdTitle, setCreatedTitle] = useState('')
-
-  useEffect(() => {
-    let isMounted = true
-
-    getFacultyApprovers()
-      .then((list) => {
-        if (isMounted) setFaculty(list)
-      })
-      .catch((error) => {
-        if (isMounted) {
-          setFacultyError(error.message || 'Could not load faculty list')
-        }
-      })
-      .finally(() => {
-        if (isMounted) setFacultyLoading(false)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -118,8 +81,6 @@ function AdminAddProject() {
   function resetForm() {
     setForm(EMPTY_FORM)
     setSdgGoals([])
-    setFacultyId('')
-    setFacultyQuery('')
     setSubmitError('')
     setCreatedTitle('')
   }
@@ -128,11 +89,6 @@ function AdminAddProject() {
     event.preventDefault()
     setSubmitError('')
 
-    if (!facultyId) {
-      setSubmitError('Select a faculty approver for this project.')
-      return
-    }
-
     setSubmitting(true)
 
     try {
@@ -140,10 +96,11 @@ function AdminAddProject() {
         title: form.title.trim(),
         domain: form.domain.trim(),
         description: form.description.trim(),
-        specificFunctionalities: splitLines(form.specificFunctionalities),
+        specificFunctionalities: splitLines(
+          form.specificFunctionalities
+        ),
         technologies: splitCommas(form.technologies),
-        sdgGoals,
-        facultyId
+        sdgGoals
       })
 
       setCreatedTitle(form.title.trim())
@@ -153,14 +110,6 @@ function AdminAddProject() {
       setSubmitting(false)
     }
   }
-
-  const filteredFaculty = faculty.filter((member) => {
-    const term = facultyQuery.toLowerCase()
-    return (
-      member.name?.toLowerCase().includes(term) ||
-      member.email?.toLowerCase().includes(term)
-    )
-  })
 
   if (createdTitle) {
     return (
@@ -227,12 +176,15 @@ function AdminAddProject() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* Section 1: Project Information */}
         <div className="form-section">
           <div className="form-section-header">
             <div className="form-section-number">1</div>
 
             <div className="form-section-titles">
-              <span className="form-section-title">Project Information</span>
+              <span className="form-section-title">
+                Project Information
+              </span>
 
               <span className="form-section-subtitle">
                 Describe the project students will be able to pick
@@ -250,7 +202,9 @@ function AdminAddProject() {
               className="field-input"
               placeholder="e.g. AI Based Attendance System"
               value={form.title}
-              onChange={(event) => updateField('title', event.target.value)}
+              onChange={(event) =>
+                updateField('title', event.target.value)
+              }
               required
             />
           </div>
@@ -266,7 +220,9 @@ function AdminAddProject() {
               list="domain-options"
               placeholder="Select or type a domain"
               value={form.domain}
-              onChange={(event) => updateField('domain', event.target.value)}
+              onChange={(event) =>
+                updateField('domain', event.target.value)
+              }
               required
             />
 
@@ -295,7 +251,10 @@ function AdminAddProject() {
           </div>
 
           <div className="field-group">
-            <label className="field-label" htmlFor="specificFunctionalities">
+            <label
+              className="field-label"
+              htmlFor="specificFunctionalities"
+            >
               Specific Functionalities
             </label>
 
@@ -305,7 +264,10 @@ function AdminAddProject() {
               placeholder="List the specific features the project will have"
               value={form.specificFunctionalities}
               onChange={(event) =>
-                updateField('specificFunctionalities', event.target.value)
+                updateField(
+                  'specificFunctionalities',
+                  event.target.value
+                )
               }
               required
             />
@@ -331,11 +293,15 @@ function AdminAddProject() {
               required
             />
 
-            <p className="field-hint">Separate each technology with a comma</p>
+            <p className="field-hint">
+              Separate each technology with a comma
+            </p>
           </div>
 
           <div className="field-group">
-            <label className="field-label">Aligned SDG Goal</label>
+            <label className="field-label">
+              Aligned SDG Goal
+            </label>
 
             <div className="tech-tag-list">
               {SDG_GOALS.map((goal) => (
@@ -355,99 +321,21 @@ function AdminAddProject() {
             </div>
 
             <p className="field-hint">
-              Select one or more UN Sustainable Development Goals this project
-              supports
+              Select one or more UN Sustainable Development Goals this
+              project supports
             </p>
           </div>
         </div>
 
+        {/* Section 2: Submission */}
         <div className="form-section">
           <div className="form-section-header">
             <div className="form-section-number">2</div>
 
             <div className="form-section-titles">
-              <span className="form-section-title">Faculty Approver</span>
-
-              <span className="form-section-subtitle">
-                The faculty member who will review applications for this
-                project
+              <span className="form-section-title">
+                Submission
               </span>
-            </div>
-          </div>
-
-          {facultyLoading ? (
-            <div className="loading-state">Loading faculty...</div>
-          ) : facultyError ? (
-            <div className="form-error">{facultyError}</div>
-          ) : (
-            <div>
-              <div className="search-control">
-                <span aria-hidden="true">⌕</span>
-
-                <input
-                  type="text"
-                  value={facultyQuery}
-                  placeholder="Search faculty by name or email"
-                  onChange={(event) => setFacultyQuery(event.target.value)}
-                />
-              </div>
-
-              <div className="approver-list">
-                {filteredFaculty.length ? (
-                  filteredFaculty.map((member) => {
-                    const isSelected = member.id === facultyId
-
-                    return (
-                      <button
-                        type="button"
-                        key={member.id}
-                        className={
-                          isSelected
-                            ? 'approver-list-item selected'
-                            : 'approver-list-item'
-                        }
-                        onClick={() => setFacultyId(member.id)}
-                      >
-                        <div className="approver-list-avatar">
-                          {initials(member.name)}
-                        </div>
-
-                        <div className="approver-list-info">
-                          <div className="approver-list-name">
-                            {member.name}
-                          </div>
-
-                          <div className="approver-list-meta">
-                            {member.email}
-                          </div>
-                        </div>
-
-                        {isSelected ? (
-                          <div className="approver-list-check">✓</div>
-                        ) : null}
-                      </button>
-                    )
-                  })
-                ) : (
-                  <div className="empty-state">
-                    <div className="empty-state-title">No faculty found</div>
-
-                    <p className="empty-state-text">
-                      Try a different search term.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="form-section">
-          <div className="form-section-header">
-            <div className="form-section-number">3</div>
-
-            <div className="form-section-titles">
-              <span className="form-section-title">Submission</span>
 
               <span className="form-section-subtitle">
                 Save the project to the Project Bank
@@ -455,10 +343,13 @@ function AdminAddProject() {
             </div>
           </div>
 
-          {submitError ? <div className="form-error">{submitError}</div> : null}
+          {submitError ? (
+            <div className="form-error">{submitError}</div>
+          ) : null}
 
           <div className="form-footer">
             <p className="section-subtext">
+              No faculty assignment is required when adding a project.
               The project is visible to students as soon as it is added.
             </p>
 
