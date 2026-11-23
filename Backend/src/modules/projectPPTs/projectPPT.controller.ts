@@ -26,7 +26,7 @@ class ProjectPPTController {
         return res.status(201).json({
             success: true,
             message: "PPT uploaded successfully and sent for mentor review",
-            data: await projectPPTService.submitOrRevise(studentId, req.body),
+            data: await projectPPTService.submitOrRevise(studentId, req.body, req.file),
         });
     }
 

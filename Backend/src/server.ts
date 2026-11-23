@@ -16,6 +16,7 @@ import projectRoute from "./modules/projects/project.route";
 import projectApplicationRoute from "./modules/projectApplications/projectApplication.route";
 import projectSelectionRoute from "./modules/projectSelections/projectSelection.route";
 import facultyProjectRoute from "./modules/facultyProjects/facultyProject.route";
+import projectPPTRoute from "./modules/projectPPTs/projectPPT.route";
 
 import notificationRouter from "./modules/notifications/notification.route"
 
@@ -53,6 +54,7 @@ app.use("/api/projects/", projectRoute);
 app.use("/api/project-applications/", projectApplicationRoute);
 app.use("/api/project-selection/", projectSelectionRoute);
 app.use("/api/faculty-projects/", facultyProjectRoute);
+app.use("/api/project-ppts/", projectPPTRoute);
 
 app.use("/api/student/", studentRouter);
 app.use("/api/teacher/", teacherRouter);

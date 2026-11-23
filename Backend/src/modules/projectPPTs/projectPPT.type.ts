@@ -22,6 +22,7 @@ export interface IPPTReview {
 export interface IProjectPPTVersion {
     versionNumber: number;
     fileUrl: string;
+    cloudinaryPublicId: string;
     fileName: string;
     mimeType: string;
     fileSize: number;
