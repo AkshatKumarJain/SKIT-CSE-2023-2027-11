@@ -1,8 +1,3 @@
-import dns from "dns";
-
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
-dns.setDefaultResultOrder("ipv4first");
-
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
@@ -24,6 +19,7 @@ import teamRoute from "./modules/teams/team.route";
 import teamRequestRoute from "./modules/teamRequests/teamRequest.route";
 
 import { connectRedis, disconnectRedis } from "./config/redis";
+import { loadAuth } from "./config/auth";
 
 const app = express();
 
@@ -68,17 +64,17 @@ app.use(errorHandler);
 
 const startServer = async () => {
     try {
-
+        await connectDB();
+        await connectRedis();
+        await loadAuth();
 
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
     } catch (error) {
         console.error("Failed to start server:", error);
+        process.exit(1);
     }
-        await connectDB();
-
-        await connectRedis();    
 };
 
 startServer();

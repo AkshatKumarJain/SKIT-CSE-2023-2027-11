@@ -1,6 +1,6 @@
 import express from "express";
 import userController from "./user.controller";
-import { authMiddleware } from "redis-jwt-auth";
+import { authMiddleware } from "../../config/auth";
 import type { RequestHandler } from "express";
 import { upload } from "../../middlewares/multer";
 

@@ -1,7 +1,5 @@
 import { setUserRole, clearUserRole } from "./auth";
-
-const API_BASE_URL =
-  "https://noncasuistical-rolf-unurged.ngrok-free.dev";
+import { API_BASE_URL, API_REQUEST_HEADERS } from "./apiConfig";
 
 // Share one refresh request across api.js, logout, and other callers.
 let refreshPromise = null;
@@ -11,6 +9,7 @@ export async function loginUser(email, password) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...API_REQUEST_HEADERS,
     },
     body: JSON.stringify({
       email,
@@ -79,6 +78,7 @@ async function performTokenRefresh() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...API_REQUEST_HEADERS,
     },
     body: JSON.stringify({
       refreshToken,
@@ -118,6 +118,7 @@ export async function logoutUser() {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      ...API_REQUEST_HEADERS,
     },
   });
 
@@ -134,6 +135,7 @@ export async function logoutUser() {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
+        ...API_REQUEST_HEADERS,
       },
     });
   }
@@ -156,6 +158,7 @@ export async function forgotPassword(email) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...API_REQUEST_HEADERS,
       },
       body: JSON.stringify({
         email,
@@ -176,17 +179,19 @@ export async function forgotPassword(email) {
   return data;
 }
 
-export async function resetPassword(email, newPassword) {
+export async function resetPassword(email, newPassword, token) {
   const response = await fetch(
     `${API_BASE_URL}/api/user/reset-password`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...API_REQUEST_HEADERS,
       },
       body: JSON.stringify({
         email,
         newPassword,
+        token,
       }),
     }
   );

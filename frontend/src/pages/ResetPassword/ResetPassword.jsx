@@ -1,10 +1,11 @@
 import "./ResetPassword.css";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { resetPassword } from "../../services/authService";
 
 function ResetPassword() {
   const navigate = useNavigate();
+  const { token } = useParams();
 
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -43,7 +44,7 @@ function ResetPassword() {
     try {
       setLoading(true);
 
-      const data = await resetPassword(email, newPassword);
+      const data = await resetPassword(email.trim(), newPassword, token);
 
       setMessage(
         data.message || "Password has been changed successfully."

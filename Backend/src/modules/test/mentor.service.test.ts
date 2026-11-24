@@ -1,10 +1,10 @@
 
 import mongoose from "mongoose";
-import projectApplicationService from "../projectApplication.service";
-import projectApplicationModel from "../projectApplication.model";
-import userModel from "../../users/user.model";
+import projectApplicationService from "../projectApplications/projectApplication.service";
+import projectApplicationModel from "../projectApplications/projectApplication.model";
+import userModel from "../users/user.model";
 
-jest.mock("../projectApplication.model", () => ({
+jest.mock("../projectApplications/projectApplication.model", () => ({
   __esModule: true,
   default: {
     find: jest.fn(),
@@ -13,7 +13,7 @@ jest.mock("../projectApplication.model", () => ({
   },
 }));
 
-jest.mock("../../users/user.model", () => ({
+jest.mock("../users/user.model", () => ({
   __esModule: true,
   default: {
     findOne: jest.fn(),

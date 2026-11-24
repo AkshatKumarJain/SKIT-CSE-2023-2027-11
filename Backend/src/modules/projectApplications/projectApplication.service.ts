@@ -26,9 +26,9 @@ type ApprovalInput = {
   rejectionReason?: string;
 };
 
-const fail = (message: string, status: number, code: string): never => {
+function fail(message: string, status: number, code: string): never {
   throw new AppError(message, status, code);
-};
+}
 
 const getTeamModel = (): mongoose.Model<TeamReference> => {
   const model = mongoose.models.Team as

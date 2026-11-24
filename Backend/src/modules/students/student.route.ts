@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import express, { type RequestHandler } from "express";
-import { authMiddleware, authorizeRole } from "redis-jwt-auth";
+import { authMiddleware, authorizeRole } from "../../config/auth";
 import studentController from "./student.controller";
 
 const requireAuth = authMiddleware({ required: true }) as RequestHandler;

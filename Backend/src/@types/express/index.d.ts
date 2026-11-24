@@ -1,5 +1,5 @@
 import "express";
-import type { JwtPayload } from "redis-jwt-auth";
+import type { JwtPayload } from "redis-jwt-auth" with { "resolution-mode": "import" };
 
 declare global {
   namespace Express {
