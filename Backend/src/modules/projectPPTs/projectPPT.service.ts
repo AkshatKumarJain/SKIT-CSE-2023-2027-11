@@ -4,7 +4,7 @@ import projectApplicationModel from "../projectApplications/projectApplication.m
 import projectModel from "../projects/project.model";
 import { AppError } from "../../errors/AppError";
 import { ERROR_CODES } from "../../errors/errorCodes";
-import { IProjectPPTVersion } from "./projectPPT.type";
+import type { IProjectPPTVersion, ProjectPPTDocument } from "./projectPPT.type";
 import { deletePPTFromCloudinary, uploadPPTToCloudinary } from "./projectPPT.cloudinary";
 import type { Express } from "express";
 
@@ -16,9 +16,9 @@ type ReviewInput = {
     rejectionReason?: string;
 };
 
-const fail = (message: string, status: number, code: string): never => {
+function fail(message: string, status: number, code: string): never {
     throw new AppError(message, status, code);
-};
+}
 
 const MAX_PPT_SIZE = 20 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = [
@@ -46,12 +46,12 @@ class ProjectPPTService {
             file.buffer.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]));
         if ((isPptx && !hasZipSignature) || (!isPptx && !hasOleSignature))
             fail("The uploaded file content does not match a PowerPoint file", 400, ERROR_CODES.VALIDATION_ERROR);
-        return { fileName, mimeType, fileSize };
+        return { fileName, mimeType, fileSize, buffer: file.buffer };
     }
 
-    private latestVersion(ppt: any): any {
+    private latestVersion(ppt: ProjectPPTDocument) {
         const version = ppt.versions.find(
-            (item: any) => item.versionNumber === ppt.latestVersionNumber,
+            (item) => item.versionNumber === ppt.latestVersionNumber,
         );
         if (!version) fail("Latest PPT version was not found", 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
         return version;
@@ -78,24 +78,26 @@ class ProjectPPTService {
     async submitOrRevise(studentId: string, data: UploadInput, uploadedFile?: Express.Multer.File) {
         if (!mongoose.isValidObjectId(studentId))
             fail("Invalid authenticated user id", 401, ERROR_CODES.UNAUTHORIZED);
-        if (!mongoose.isValidObjectId(data.applicationId))
+        const applicationId = data?.applicationId;
+        if (typeof applicationId !== "string" || !mongoose.isValidObjectId(applicationId))
             fail("Valid applicationId is required", 400, ERROR_CODES.VALIDATION_ERROR);
 
-        const file = this.validateUpload(uploadedFile);
-        const application = await projectApplicationModel.findById(data.applicationId);
+        const { buffer, ...file } = this.validateUpload(uploadedFile);
+        const application = await projectApplicationModel.findById(applicationId);
         if (!application) fail("Project application not found", 404, ERROR_CODES.NOT_FOUND);
         if (application.studentId.toString() !== studentId)
             fail("Only the team leader who submitted the application can upload its PPT", 403, ERROR_CODES.FORBIDDEN);
         if (application.status !== "APPROVED")
             fail("PPT can be submitted only after final admin approval of the project proposal", 409, ERROR_CODES.VALIDATION_ERROR);
-        if (!application.projectId || !application.mentorId)
+        const { projectId, mentorId } = application;
+        if (!projectId || !mentorId)
             fail("Approved application is missing project or mentor information", 409, ERROR_CODES.VALIDATION_ERROR);
 
         const existing = await projectPPTModel.findOne({ applicationId: application._id });
         if (existing && existing.status !== "REVISION_REQUIRED")
             fail("A new PPT version can be uploaded only after mentor requests a revision", 409, ERROR_CODES.VALIDATION_ERROR);
 
-        const cloudFile = await uploadPPTToCloudinary(uploadedFile!.buffer, file.fileName);
+        const cloudFile = await uploadPPTToCloudinary(buffer, file.fileName);
         const versionFile = { ...file, fileUrl: cloudFile.secureUrl, cloudinaryPublicId: cloudFile.publicId };
         try {
             if (!existing) {
@@ -109,10 +111,10 @@ class ProjectPPTService {
                 };
                 const created = await projectPPTModel.create({
                     applicationId: application._id,
-                    projectId: application.projectId,
+                    projectId,
                     teamId: application.teamId,
                     studentId: application.studentId,
-                    mentorId: application.mentorId,
+                    mentorId,
                     status: "PENDING_MENTOR_REVIEW",
                     latestVersionNumber: 1,
                     versions: [version],
@@ -212,7 +214,7 @@ class ProjectPPTService {
         if (ppt.status !== "PENDING_MENTOR_REVIEW")
             fail("PPT is not awaiting mentor review", 409, ERROR_CODES.VALIDATION_ERROR);
 
-        const version: any = this.latestVersion(ppt);
+        const version = this.latestVersion(ppt);
         const comment = (input.rejectionReason || input.comment || "").trim();
         if (!approved && !comment)
             fail("Mentor must provide remarks when requesting a revision", 400, ERROR_CODES.VALIDATION_ERROR);
@@ -235,15 +237,14 @@ class ProjectPPTService {
             fail("approved must be true or false", 400, ERROR_CODES.VALIDATION_ERROR);
 
         const session = await mongoose.startSession();
-        let result: any;
         try {
-            await session.withTransaction(async () => {
+            const reviewedId = await session.withTransaction(async () => {
                 const ppt = await projectPPTModel.findById(pptId).session(session);
                 if (!ppt) fail("PPT submission not found", 404, ERROR_CODES.NOT_FOUND);
                 if (ppt.status !== "PENDING_COORDINATOR_REVIEW")
                     fail("PPT is not awaiting coordinator review", 409, ERROR_CODES.VALIDATION_ERROR);
 
-                const version: any = this.latestVersion(ppt);
+                const version = this.latestVersion(ppt);
                 if (version.mentorReview?.decision !== "APPROVED")
                     fail("The latest PPT version must be approved by the mentor first", 409, ERROR_CODES.VALIDATION_ERROR);
 
@@ -293,12 +294,12 @@ class ProjectPPTService {
                     ppt.status = "REJECTED_BY_COORDINATOR";
                 }
                 await ppt.save({ session });
-                result = ppt._id;
+                return ppt._id;
             });
+            return this.populate(projectPPTModel.findById(reviewedId));
         } finally {
             await session.endSession();
         }
-        return this.populate(projectPPTModel.findById(result));
     }
 }
 

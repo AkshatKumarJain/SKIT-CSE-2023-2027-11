@@ -8,6 +8,8 @@ cloudinary.config({
         api_secret: process.env.API_SECRET!
         });
 
+export { cloudinary };
+
 type SupportedResourceType = "auto" | "image" | "video" | "raw";
 
 const removeLocalFile = (localFilePath: string) => {

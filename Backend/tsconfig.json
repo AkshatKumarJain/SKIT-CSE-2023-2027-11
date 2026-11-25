@@ -83,7 +83,5 @@
 
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  // The PPT module is a draft with an empty service and no mounted router.
-  "exclude": ["src/modules/projectPPTs"]
+  "include": ["src/**/*"]
 }

@@ -1,6 +1,6 @@
 import express from "express";
 import type { RequestHandler } from "express";
-import { authMiddleware } from "redis-jwt-auth";
+import { authMiddleware } from "../../config/auth";
 import projectPPTController from "./projectPPT.controller";
 import { uploadPPTFile } from "./projectPPT.upload";
 
