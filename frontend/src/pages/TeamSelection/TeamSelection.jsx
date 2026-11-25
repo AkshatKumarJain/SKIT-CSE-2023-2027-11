@@ -15,7 +15,7 @@ import {
   cancelTeamRequest
 } from '../../services/teamService'
 
-import './Teamselection.css'
+import './TeamSelection.css'
 
 function initials(name) {
   return name
