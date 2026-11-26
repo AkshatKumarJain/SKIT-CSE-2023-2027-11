@@ -28,6 +28,7 @@ const versionSchema = new mongoose.Schema(
     {
         versionNumber: { type: Number, required: true, min: 1 },
         fileUrl: { type: String, required: true, trim: true },
+        cloudinaryPublicId: { type: String, required: true, trim: true },
         fileName: { type: String, required: true, trim: true },
         mimeType: { type: String, required: true, trim: true },
         fileSize: { type: Number, required: true, min: 1 },

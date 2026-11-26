@@ -1,6 +1,6 @@
 import express from "express";
 import notificationController from "./notification.controller";
-import { authMiddleware } from "redis-jwt-auth";
+import { authMiddleware } from "../../config/auth";
 import { RequestHandler } from "express";
 
 const router = express.Router();

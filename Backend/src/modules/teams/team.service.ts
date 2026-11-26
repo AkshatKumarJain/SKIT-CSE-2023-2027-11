@@ -9,7 +9,7 @@ import {
   MAX_TEAM_SIZE,
   MIN_TEAM_SIZE,
 } from "./team.type";
-import transporter from "../../config/nodemailer";
+import { sendEmail } from "../../config/nodemailer";
 
 const active = ["FORMING", "COMPLETED"] as const;
 const sid = (x: mongoose.Types.ObjectId | string) => x.toString();
@@ -159,7 +159,7 @@ class TeamService {
     // the authenticated /api/team-requests/:requestId/accept|reject APIs.
     // Best-effort: a failed send must never fail request creation.
     try {
-      await transporter.sendMail({
+      await sendEmail({
         from: process.env.SENDER_EMAIL || process.env.SMTP_USER,
         to: member.email,
         subject: "New team-member request",

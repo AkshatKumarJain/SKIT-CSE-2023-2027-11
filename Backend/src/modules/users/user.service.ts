@@ -4,19 +4,30 @@ import userModel from "./user.model";
 import { AppError } from "../../errors/AppError";
 import { errorHandler } from "../../middlewares/errorHandler";
 import { ERROR_CODES } from "../../errors/errorCodes";
-import { issueTokens, revokeAll, rotateRefreshToken } from "redis-jwt-auth";
+import { loadAuth } from "../../config/auth";
 import { access } from "node:fs";
-import crypto from "crypto"
+import crypto from "node:crypto";
 import { redisClient } from "../../config/redis";
-import transporter from "../../config/nodemailer";
+import { sendEmail } from "../../config/nodemailer";
 import { IUpdateProfile } from "./user.type";
 import { uploadOnCloudinary } from "../../config/cloudinary";
 import bcrypt from "bcrypt"
 import Student from "../students/student.model";
 import Teacher from "../teachers/teacher.model";
-// import http from "http";
+const PASSWORD_RESET_TTL_SECONDS = 5 * 60;
+// Earlier reset records used the wrong expiry unit. Only accept newly issued links.
+const PASSWORD_RESET_KEY_PREFIX = "password-reset:v2:";
 
-// config.isProd = true;
+const CONSUME_RESET_TOKEN_SCRIPT = `
+    if redis.call("GET", KEYS[1]) == ARGV[1] then
+        return redis.call("DEL", KEYS[1])
+    end
+    return 0
+`;
+
+function invalidResetToken() {
+    return new AppError("Invalid or expired reset link. Request a new link.", 400, ERROR_CODES.INVALID_TOKEN);
+}
 
 class UserService {
 
@@ -91,6 +102,7 @@ class UserService {
         {
             throw new AppError("email or password is incorrect", 401, ERROR_CODES.INVALID_CREDENTIALS);
         }
+        const { issueTokens } = await loadAuth();
         const { accessToken, refreshToken } = await issueTokens({ userId: findUser._id.toString(), role: findUser.role });
         if(!accessToken || !refreshToken)
         {
@@ -100,6 +112,7 @@ class UserService {
     }
 
     async logout(userId: string) {
+        const { revokeAll } = await loadAuth();
         const isRevoked = await revokeAll(userId.toString());
         if(!isRevoked)
         {
@@ -116,6 +129,7 @@ class UserService {
         try {
             // The auth package owns refresh-token storage and rotation. Do not
             // scan the application's Redis client before calling it.
+            const { rotateRefreshToken } = await loadAuth();
             const rotatedTokens = await rotateRefreshToken(refreshToken);
             if (!rotatedTokens?.accessToken || !rotatedTokens?.refreshToken) {
                 throw new AppError("Invalid or expired refresh token", 401, "INVALID_REFRESH_TOKEN");
@@ -141,96 +155,61 @@ class UserService {
         }
     }
 
-    // private async getCacheKey() {
-    //     const rawToken = crypto.randomBytes(32).toString('hex');
-    //     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    async forgotPassword(email: string) {
+        const user = await userModel.findOne({ email });
+        if (!user) return;
 
-    //     const cacheKey = "cache:resetOtp";
+        const cacheKey = `${PASSWORD_RESET_KEY_PREFIX}${user._id}`;
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+        await redisClient.setEx(cacheKey, PASSWORD_RESET_TTL_SECONDS, tokenHash);
 
-    //     const resetOTP = tokenHash;
-    //     const resetOTPExpiresAt = Date.now() + 300 * 1000; // 5 minutes
+        const appBaseUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
+        const resetUrl = `${appBaseUrl}/reset-password/${rawToken}`;
 
-    //     return {cacheKey, resetOTP, resetOTPExpiresAt};
-    // }
-
-    async forgotPassword(email: string){
-        const findUser = await userModel.findOne({email: email});
-
-        if(!findUser)
-        {
-            throw new AppError("If this email exists, the link has been sent", 200, "");
-        }
-
-        const cacheKey = `password-reset:${findUser._id}`; 
-        const rawToken = crypto.randomBytes(32).toString('hex');
-        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-        const resetOTP = tokenHash;
-        const resetOTPExpiresAt = Date.now() + 300 * 1000; // 5 minutes
-
-        await redisClient.setEx(cacheKey, resetOTPExpiresAt, resetOTP);
-
-        // await findUser.save();
-
-        const AppBaseUrl = "http://localhost:5173";
-
-        const resetUrl = `${AppBaseUrl}/reset-password/${rawToken}`;
-
-        const mailOptions = {
+        const emailResult = await sendEmail({
             from: process.env.SENDER_EMAIL,
-            to: findUser.email,
+            to: user.email,
             subject: "Reset password email",
-            text: `click the link below to reset your password. It will expire in 5 minutes.
-            <a href="${resetUrl}">${resetUrl}</a>
-            ` 
-        }
+            text: `Open this link to reset your password. It expires in 5 minutes: ${resetUrl}`,
+        });
 
-        console.log(mailOptions);
-
-        const sendEmail = await transporter.sendMail(mailOptions);
-
-        if(!sendEmail)
-        {
+        if (!emailResult) {
             throw new AppError("could not send email", 503, "EMAIL_DELIVERY_FAILED");
         }
-
-        // return {
-        //     message: "Mail sent successfully"
-        // };
-        return true;
     }
 
-    async resetPassword(newPassword: string, email: string){
-        const findUser = await userModel.findOne({email: email});
-
-        if(!findUser)
-        {
-            throw new AppError("could not find user with this email", 404, "");
+    async resetPassword(newPassword: string, email: string, token: string) {
+        if (!/^[a-f0-9]{64}$/.test(token)) {
+            throw invalidResetToken();
         }
 
-        const isCachedAvailable = await redisClient.get(`password-reset:${findUser._id}`);
-
-        if(!isCachedAvailable)
-        {
-            throw new Error("Invalid or expired token")
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            throw invalidResetToken();
         }
 
-        const oldPassword: string = findUser.password;
-
-        if(oldPassword===newPassword)
-        {
-            throw new AppError("New password cannot be same as old password.", 422, "Unprocessable Entity");
+        const cacheKey = `${PASSWORD_RESET_KEY_PREFIX}${user._id}`;
+        const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+        if (await redisClient.get(cacheKey) !== tokenHash) {
+            throw invalidResetToken();
         }
 
-        findUser.password = newPassword;
-        
-        await findUser.save();
+        if (await user.comparePassword(newPassword)) {
+            throw new AppError("New password must be different from the current password.", 422, ERROR_CODES.INVALID_CREDENTIALS);
+        }
 
-        //  await this.logout(findUser._id.toString());
+        // Claim the matching token atomically before saving so it can only be used once.
+        const consumed = await redisClient.eval(CONSUME_RESET_TOKEN_SCRIPT, {
+            keys: [cacheKey],
+            arguments: [tokenHash],
+        });
+        if (consumed !== 1) {
+            throw invalidResetToken();
+        }
 
-        // return {
-        //     message: "Password reset successful. Please login again.",
-        // };
-        return true;
+        user.password = newPassword;
+        await user.save();
     }
 
     async updateUserProfile({userId, phoneNo, file}: IUpdateProfile) {

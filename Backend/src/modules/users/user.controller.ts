@@ -69,35 +69,35 @@ class UserController {
         });
     }
 
-    async forgotPassword(req: Request, res: Response): Promise<Response>{
-        const {email} = req.body;
-        if(!email)
-        {
-            throw new AppError("email is required", 400, ERROR_CODES.VALIDATION_ERROR)
+    async forgotPassword(req: Request, res: Response): Promise<Response> {
+        const { email } = req.body ?? {};
+        if (typeof email !== "string" || !email.trim()) {
+            throw new AppError("Email is required.", 400, ERROR_CODES.VALIDATION_ERROR);
         }
 
-            await userService.forgotPassword(email);
+        await userService.forgotPassword(email.trim().toLowerCase());
 
-            return res.status(200).json({
-                message: "If this email exists, email will be sent."
-            })
-        }
+        return res.status(200).json({
+            message: "If this email exists, email will be sent.",
+        });
+    }
     
-    async resetPassword(req: Request, res: Response): Promise<Response>{
-        const {newPassword, email} = req.body;
-        if(!newPassword)
-            {
-                throw new AppError("new Password is required", 400, ERROR_CODES.VALIDATION_ERROR);
-            }
-        if(!email)
-        {
-            throw new AppError("email is required", 400, ERROR_CODES.VALIDATION_ERROR);
+    async resetPassword(req: Request, res: Response): Promise<Response> {
+        const { newPassword, email, token } = req.body ?? {};
+        if (typeof newPassword !== "string" || !newPassword) {
+            throw new AppError("New password is required.", 400, ERROR_CODES.VALIDATION_ERROR);
         }
-        
-        await userService.resetPassword(newPassword, email);
-        
+        if (typeof email !== "string" || !email.trim()) {
+            throw new AppError("Email is required.", 400, ERROR_CODES.VALIDATION_ERROR);
+        }
+        if (typeof token !== "string") {
+            throw new AppError("Reset token is required.", 400, ERROR_CODES.INVALID_TOKEN);
+        }
+
+        await userService.resetPassword(newPassword, email.trim().toLowerCase(), token);
+
         return res.status(201).json({
-            message: "Password has been changed successfully"
+            message: "Password has been changed successfully",
         });
     }
 

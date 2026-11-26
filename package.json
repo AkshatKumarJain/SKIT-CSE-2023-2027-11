@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "dev": "npm --prefix Backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev"
+  },
   "dependencies": {
     "typescript": "^7.0.2"
   }

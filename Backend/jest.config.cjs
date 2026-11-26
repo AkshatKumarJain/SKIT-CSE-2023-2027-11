@@ -1,6 +1,11 @@
 module.exports = {
-  preset: "ts-jest",
+  transform: {
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      { tsconfig: { module: "CommonJS", moduleResolution: "Node" } },
+    ],
+  },
   testEnvironment: "node",
   clearMocks: true,
-  roots: ["<rootDir>/tests"],
+  roots: ["<rootDir>/src"],
 };

@@ -5,10 +5,7 @@
 // apiFetch unwraps `data` for callers and throws ApiError on non-2xx responses.
 
 import { refreshAccessToken, clearAuthData } from "./authService";
-
-const BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://noncasuistical-rolf-unurged.ngrok-free.dev";
+import { API_BASE_URL, API_REQUEST_HEADERS } from "./apiConfig";
 
 // Route prefixes each backend module is mounted on.
 export const ENDPOINTS = {
@@ -50,7 +47,7 @@ export async function apiFetch(path, options = {}, isRetry = false) {
   let response;
 
   try {
-    response = await fetch(`${BASE_URL}${path}`, {
+    response = await fetch(`${API_BASE_URL}${path}`, {
       credentials: "include",
       ...options,
       headers: {
@@ -58,8 +55,7 @@ export async function apiFetch(path, options = {}, isRetry = false) {
           ? {}
           : { "Content-Type": "application/json" }),
 
-        // Bypass the ngrok browser warning page.
-        "ngrok-skip-browser-warning": "true",
+        ...API_REQUEST_HEADERS,
 
         ...(accessToken
           ? { Authorization: `Bearer ${accessToken}` }
@@ -120,7 +116,7 @@ export async function apiFetch(path, options = {}, isRetry = false) {
       ? raw.trim().slice(0, 200)
       : null;
 
-    const where = `${method} ${BASE_URL}${path}`;
+    const where = `${method} ${API_BASE_URL}${path}`;
 
     const hint =
       response.status >= 500 && !raw

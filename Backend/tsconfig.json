@@ -68,7 +68,7 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "CommonJS",
+    "module": "NodeNext",
 
     "rootDir": "./src",
     "outDir": "./dist",

@@ -1,8 +1,3 @@
-import dns from "dns";
-
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
-dns.setDefaultResultOrder("ipv4first");
-
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
@@ -16,6 +11,7 @@ import projectRoute from "./modules/projects/project.route";
 import projectApplicationRoute from "./modules/projectApplications/projectApplication.route";
 import projectSelectionRoute from "./modules/projectSelections/projectSelection.route";
 import facultyProjectRoute from "./modules/facultyProjects/facultyProject.route";
+import projectPPTRoute from "./modules/projectPPTs/projectPPT.route";
 
 import notificationRouter from "./modules/notifications/notification.route"
 
@@ -23,6 +19,7 @@ import teamRoute from "./modules/teams/team.route";
 import teamRequestRoute from "./modules/teamRequests/teamRequest.route";
 
 import { connectRedis, disconnectRedis } from "./config/redis";
+import { loadAuth } from "./config/auth";
 
 const app = express();
 
@@ -53,6 +50,7 @@ app.use("/api/projects/", projectRoute);
 app.use("/api/project-applications/", projectApplicationRoute);
 app.use("/api/project-selection/", projectSelectionRoute);
 app.use("/api/faculty-projects/", facultyProjectRoute);
+app.use("/api/project-ppts/", projectPPTRoute);
 
 app.use("/api/student/", studentRouter);
 app.use("/api/teacher/", teacherRouter);
@@ -66,17 +64,17 @@ app.use(errorHandler);
 
 const startServer = async () => {
     try {
-
+        await connectDB();
+        await connectRedis();
+        await loadAuth();
 
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
     } catch (error) {
         console.error("Failed to start server:", error);
+        process.exit(1);
     }
-        await connectDB();
-
-        await connectRedis();    
 };
 
 startServer();

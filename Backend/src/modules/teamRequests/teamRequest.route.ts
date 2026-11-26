@@ -1,5 +1,5 @@
 import express from "express";
-import { authMiddleware } from "redis-jwt-auth";
+import { authMiddleware } from "../../config/auth";
 import type { RequestHandler } from "express";
 import c from "../teams/team.controller";
 const auth = authMiddleware({ required: true }) as RequestHandler;
